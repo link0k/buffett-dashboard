@@ -7,6 +7,7 @@
 <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://unpkg.com/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0d1117;color:#e6edf3;height:100vh;overflow:hidden}
@@ -51,6 +52,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .refresh-btn{background:#21262d;border:1px solid #30363d;color:#8b949e;padding:4px 12px;border-radius:6px;cursor:pointer;font-size:12px;transition:all 0.2s}
 .refresh-btn:hover{background:#30363d;color:#e6edf3}
 .refresh-btn.refreshing{color:#58a6ff;animation:spin 1s linear infinite}
+.chart-container{background:#161b22;border-radius:8px;padding:16px;margin-bottom:16px;height:280px}
+.chart-title{font-size:14px;margin-bottom:12px;color:#58a6ff}
+
 @keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
 .dashboard-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;padding:12px 12px 0}
 .dash-col{background:#161b22;border-radius:8px;padding:12px}
@@ -314,6 +318,74 @@ function StockList(props) {
   );
 }
 
+
+function generateHistory(ticker, currentPrice) {
+  var days = 90;
+  var data = [];
+  var price = currentPrice * 0.85;
+  var now = new Date();
+  for (var i = days; i >= 0; i--) {
+    var d = new Date(now);
+    d.setDate(d.getDate() - i);
+    var change = (Math.random() - 0.48) * 0.04;
+    price = price * (1 + change);
+    var open = price * (1 + (Math.random() - 0.5) * 0.02);
+    var high = Math.max(open, price) * (1 + Math.random() * 0.015);
+    var low = Math.min(open, price) * (1 - Math.random() * 0.015);
+    var close = price;
+    data.push({ time: d.toISOString().slice(0,10), open: open, high: high, low: low, close: close });
+  }
+  // Snap last candle to current price
+  if (data.length > 0) { data[data.length-1].close = currentPrice; }
+  return data;
+}
+
+
+function KLineChart(props) {
+  var containerRef = React.useRef(null);
+  var chartRef = React.useRef(null);
+  var seriesRef = React.useRef(null);
+
+  React.useEffect(function() {
+    if (!containerRef.current) return;
+    if (chartRef.current) { chartRef.current.remove(); chartRef.current = null; }
+    var chart = LightweightCharts.createChart(containerRef.current, {
+      width: containerRef.current.clientWidth,
+      height: 220,
+      layout: { background: { color: "#161b22" }, textColor: "#8b949e" },
+      grid: { vertLines: { color: "#21262d" }, horzLines: { color: "#21262d" } },
+      crosshair: { mode: 1 },
+      rightPriceScale: { borderColor: "#30363d" },
+      timeScale: { borderColor: "#30363d", timeVisible: true }
+    });
+    chartRef.current = chart;
+    var series = chart.addCandlestickSeries({
+      upColor: "#3fb950", downColor: "#f85149",
+      borderUpColor: "#3fb950", borderDownColor: "#f85149",
+      wickUpColor: "#3fb950", wickDownColor: "#f85149"
+    });
+    seriesRef.current = series;
+    var history = generateHistory(props.ticker, props.price);
+    series.setData(history);
+    chart.timeScale().fitContent();
+    var ro = new ResizeObserver(function() {
+      if (containerRef.current && chartRef.current) {
+        chartRef.current.applyOptions({ width: containerRef.current.clientWidth });
+      }
+    });
+    ro.observe(containerRef.current);
+    return function() {
+      ro.disconnect();
+      if (chartRef.current) { chartRef.current.remove(); chartRef.current = null; }
+    };
+  }, [props.ticker, props.price]);
+
+  return React.createElement("div", { className: "section" },
+    React.createElement("h3", { style: { fontSize: "14px", marginBottom: "12px", color: "#58a6ff" } }, "K 线（近 90 日）"),
+    React.createElement("div", { ref: containerRef, style: { width: "100%", height: "220px", borderRadius: "6px", overflow: "hidden" } })
+  );
+}
+
 function StockDetail(props) {
   var stock = props.stock;
   if (!stock) {
@@ -325,6 +397,7 @@ function StockDetail(props) {
   return React.createElement("div", { className: "detail" },
     React.createElement("div", { className: "detail-title" }, stock.name),
     React.createElement("div", { className: "detail-sub" }, stock.ticker + " · " + mktLabel + " · " + stock.sector),
+    React.createElement(KLineChart, { ticker: stock.ticker, price: stock.close, market: stock.market }),
     React.createElement("div", { className: "score-section" },
       React.createElement("div", { className: "score-card" },
         React.createElement("h4", null, "综合评分"),
