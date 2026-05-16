@@ -489,8 +489,7 @@ function WatchlistPanel(props) {
   var watchlistStocks = stocks.filter(function(s) { return watchlist.indexOf(s.ticker) >= 0; });
   var totalScore = watchlistStocks.length > 0 ? Math.round(watchlistStocks.reduce(function(sum, s) { return sum + (s.score_overall || 0); }, 0) / watchlistStocks.length) : 0;
   var q = qs.trim();
-  var notWatched = stocks.filter(function(s) { return watchlist.indexOf(s.ticker) < 0; });
-  var searchResults = q.length > 0 ? notWatched.filter(function(s) {
+  var searchResults = q.length > 0 ? stocks.filter(function(s) {
     var nm = s.name || "";
     var tk = (s.ticker || "").toLowerCase();
     var sq = q.toLowerCase();
@@ -506,7 +505,7 @@ function WatchlistPanel(props) {
         ),
         React.createElement("div", { className: "modal-search" },
           React.createElement("input", { type: "text", className: "modal-input", placeholder: "\u641c\u7d22\u80a1\u7968\u540d\u79f0\u6216\u4ee3\u7801...", value: qs, onChange: function(e) { qset(e.target.value); } }),
-        React.createElement("div", { style: { fontSize: 11, color: "#8b949e", padding: "4px 0" } }, "\u641c\u7d22:", qs, " | \u672a\u81ea\u9009:", notWatched.length, " | \u7ed3\u679c:", searchResults.length)
+        React.createElement("div", { style: { fontSize: 11, color: "#8b949e", padding: "4px 0" } }, "\u641c\u7d22:", qs, " | \u7ed3\u679c:", searchResults.length)
         ),
         React.createElement("div", { className: "modal-results" },
           searchResults.slice(0, 8).map(function(s) {
