@@ -65,6 +65,25 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .dash-rank{display:flex;align-items:center;gap:8px}
 .rank-num{width:18px;height:18px;border-radius:50%;background:#1f6feb;color:#fff;font-size:10px;display:flex;align-items:center;justify-content:center}
 .portfolio-panel,.signals-panel,.data-panel{background:#0d1117;min-height:100%;padding:20px}
+.watchlist-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+.watchlist-stat{background:#161b22;border-radius:8px;padding:14px;text-align:center}
+.watchlist-stat-num{font-size:24px;font-weight:700;color:#e6edf3}
+.watchlist-stat-label{font-size:11px;color:#8b949e;margin-top:4px}
+.watchlist-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px}
+.watchlist-card{background:#161b22;border-radius:8px;padding:14px;cursor:pointer;border:1px solid transparent;transition:all 0.2s}
+.watchlist-card:hover,.watchlist-card.selected{background:#1c2128;border-color:#58a6ff}
+.wl-card-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
+.wl-name{font-weight:600;font-size:13px;margin-bottom:3px}
+.wl-meta{font-size:11px;color:#8b949e}
+.wl-star{font-size:16px;cursor:pointer;color:#8b949e;transition:color 0.2s}
+.wl-star.active,.wl-star:hover{color:#f0b429}
+.wl-star-inline{font-size:14px;cursor:pointer;color:#8b949e;margin:0 4px;transition:color 0.2s}
+.wl-star-inline.active{color:#f0b429}
+.wl-star-inline:hover{color:#f0b429}
+.wl-price{font-size:20px;font-weight:700;margin-bottom:8px}
+.wl-footer{display:flex;justify-content:space-between;align-items:center}
+.wl-roic{font-size:11px;color:#8b949e;margin-top:4px}
+.wl-discount{font-size:11px;font-weight:600}
 </style>
 </head>
 <body>
@@ -296,6 +315,8 @@ function StockList(props) {
   var selected = props.selected;
   var onSelect = props.onSelect;
   var filter = props.filter;
+  var watchlist = props.watchlist || [];
+  var onToggle = props.onToggle;
   var filtered = filter === "all" ? stocks : stocks.filter(function(s) { return s.market === filter; });
   return React.createElement("div", { className: "stock-list" },
     filtered.map(function(s) {
@@ -434,6 +455,78 @@ function StockDetail(props) {
   );
 }
 
+function WatchlistPanel(props) {
+  var watchlist = props.watchlist;
+  var stocks = props.stocks;
+  var selected = props.selected;
+  var onSelect = props.onSelect;
+  var onToggle = props.onToggle;
+
+  var watchlistStocks = stocks.filter(function(s) { return watchlist.includes(s.ticker); });
+  var totalValue = watchlistStocks.reduce(function(sum, s) { return sum + (s.close || 0); }, 0);
+  var totalScore = watchlistStocks.length > 0 ? Math.round(watchlistStocks.reduce(function(sum, s) { return sum + (s.score_overall || 0); }, 0) / watchlistStocks.length) : 0;
+
+  if (watchlistStocks.length === 0) {
+    return React.createElement("div", { className: "portfolio-panel" },
+      React.createElement("div", { className: "section" },
+        React.createElement("h3", null, "自选股"),
+        React.createElement("div", { style: { color: "#8b949e", fontSize: 13, padding: "20px 0" } }, "暂无自选股，点击股票旁的 ☆ 添加")
+      )
+    );
+  }
+
+  return React.createElement("div", { className: "portfolio-panel" },
+    React.createElement("div", { className: "watchlist-summary" },
+      React.createElement("div", { className: "watchlist-stat" },
+        React.createElement("div", { className: "watchlist-stat-num" }, watchlistStocks.length),
+        React.createElement("div", { className: "watchlist-stat-label" }, "自选数")
+      ),
+      React.createElement("div", { className: "watchlist-stat" },
+        React.createElement("div", { className: "watchlist-stat-num", style: { color: "#58a6ff" } }, totalScore),
+        React.createElement("div", { className: "watchlist-stat-label" }, "平均评分")
+      ),
+      React.createElement("div", { className: "watchlist-stat" },
+        React.createElement("div", { className: "watchlist-stat-num", style: { color: "#3fb950" } }, watchlistStocks.filter(function(s) { return s.dcf_value > s.close; }).length),
+        React.createElement("div", { className: "watchlist-stat-label" }, "低估机会")
+      ),
+      React.createElement("div", { className: "watchlist-stat" },
+        React.createElement("div", { className: "watchlist-stat-num", style: { color: "#f85149" } }, watchlistStocks.filter(function(s) { return s.dcf_value < s.close; }).length),
+        React.createElement("div", { className: "watchlist-stat-label" }, "高估提醒")
+      )
+    ),
+    React.createElement("div", { className: "watchlist-grid" },
+      watchlistStocks.map(function(stock) {
+        var mktLabel = stock.market === "CN" ? "A股" : stock.market === "HK" ? "港股" : "美股";
+        var prefix = stock.market === "CN" ? "¥" : stock.market === "HK" ? "HK$" : "$";
+        var isUndervalued = stock.dcf_value > stock.close;
+        var discount = stock.dcf_value > 0 ? Math.round((1 - stock.close / stock.dcf_value) * 100) : 0;
+        return React.createElement("div", {
+          key: stock.ticker,
+          className: "watchlist-card " + (selected === stock.ticker ? "selected" : ""),
+          onClick: function() { onSelect(stock.ticker); }
+        },
+          React.createElement("div", { className: "wl-card-header" },
+            React.createElement("div", null,
+              React.createElement("div", { className: "wl-name" }, stock.name),
+              React.createElement("div", { className: "wl-meta" }, stock.ticker, " · ", mktLabel)
+            ),
+            React.createElement("div", { className: "wl-star active", onClick: function(e) { e.stopPropagation(); onToggle(stock.ticker); } }, "★")
+          ),
+          React.createElement("div", { className: "wl-price" }, prefix + stock.close),
+          React.createElement("div", { className: "wl-footer" },
+            React.createElement("div", { className: "wl-score " + (stock.score_overall >= 80 ? "score-a" : stock.score_overall >= 65 ? "score-b" : "score-c") }, stock.score_overall),
+            React.createElement("div", { className: "wl-discount", style: { color: isUndervalued ? "#3fb950" : "#f85149" } },
+              isUndervalued ? "低估 " + discount + "%" : "溢价 " + Math.abs(discount) + "%"
+            )
+          ),
+          React.createElement("div", { className: "wl-roic" }, "ROIC " + (stock.roic * 100).toFixed(1) + "%")
+        );
+      })
+    )
+  );
+}
+
+
 function PortfolioPanel() {
   return React.createElement("div", { className: "portfolio-panel" },
     React.createElement("div", { className: "section" },
@@ -541,6 +634,17 @@ function App() {
   var _useState5 = useState(new Date().toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" }));
   var refreshTime = _useState5[0];
   var setRefreshTime = _useState5[1];
+  var _useState6 = useState(["600519.SH", "AAPL", "00700.HK"]);
+  var watchlist = _useState6[0];
+  var setWatchlist = _useState6[1];
+
+  var toggleWatchlist = function(ticker) {
+    if (watchlist.includes(ticker)) {
+      setWatchlist(watchlist.filter(function(t) { return t !== ticker; }));
+    } else {
+      setWatchlist([ticker].concat(watchlist));
+    }
+  };
 
   var handleRefresh = function() {
     setRefreshing(true);
@@ -553,6 +657,7 @@ function App() {
   var selectedStock = MOCK[selected];
   var navItems = [
     { key: "stocks", label: "股票" },
+    { key: "watchlist", label: "自选" },
     { key: "portfolio", label: "持仓" },
     { key: "signals", label: "信号" },
     { key: "data", label: "数据" }
@@ -599,10 +704,11 @@ function App() {
       nav === "stocks" && React.createElement("div", null,
         React.createElement(DashboardRow, { stocks: STOCKS, onSelect: setSelected }),
         React.createElement("div", { className: "content" },
-          React.createElement(StockList, { stocks: STOCKS, selected: selected, onSelect: setSelected, filter: filter }),
+          React.createElement(StockList, { stocks: STOCKS, selected: selected, onSelect: setSelected, filter: filter, watchlist: watchlist, onToggle: toggleWatchlist }),
           React.createElement(StockDetail, { stock: selectedStock })
         )
       ),
+      nav === "watchlist" && React.createElement(WatchlistPanel, { watchlist: watchlist, stocks: STOCKS, selected: selected, onSelect: setSelected, onToggle: toggleWatchlist }),
       nav === "portfolio" && React.createElement(PortfolioPanel, null),
       nav === "signals" && React.createElement(SignalsPanel, null),
       nav === "data" && React.createElement(DataPanel, null)
