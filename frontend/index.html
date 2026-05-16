@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BuffettDash - 巴菲特选股仪表盘</title>
+<script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0d1117;color:#e6edf3;height:100vh;overflow:hidden}
+.app{display:flex;height:100vh}
+.sidebar{width:220px;background:#161b22;border-right:1px solid #30363d;display:flex;flex-direction:column}
+.logo{padding:20px 16px;font-size:18px;font-weight:700;color:#58a6ff;border-bottom:1px solid #30363d}
+.nav{padding:12px 0;flex:1}
+.nav-item{padding:10px 16px;cursor:pointer;color:#8b949e;font-size:14px}
+.nav-item:hover,.nav-item.active{background:#21262d;color:#e6edf3}
+.nav-item.active{border-left:3px solid #58a6ff}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{padding:12px 20px;background:#161b22;border-bottom:1px solid #30363d;display:flex;align-items:center;justify-content:space-between}
+.filters{display:flex;gap:12px}
+.tag{padding:4px 10px;border-radius:12px;font-size:12px;cursor:pointer;background:#21262d;color:#8b949e}
+.tag.active{background:#1f6feb;color:#fff}
+.content{flex:1;display:flex;overflow:hidden}
+.stock-list{width:380px;border-right:1px solid #30363d;overflow-y:auto;padding:8px}
+.stock-card{padding:12px;border-radius:8px;margin-bottom:6px;cursor:pointer;border:1px solid transparent}
+.stock-card:hover,.stock-card.selected{background:#161b22;border-color:#58a6ff}
+.stock-header{display:flex;justify-content:space-between;margin-bottom:6px}
+.stock-name{font-weight:600;font-size:14px}
+.stock-meta{display:flex;gap:12px;font-size:12px;color:#8b949e}
+.score-badge{padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600}
+.score-a{background:#238636;color:#fff}
+.score-b{background:#9e6a03;color:#fff}
+.score-c{background:#6e7681;color:#fff}
+.detail{flex:1;overflow-y:auto;padding:20px}
+.detail-title{font-size:24px;font-weight:700;margin-bottom:4px}
+.detail-sub{color:#8b949e;font-size:13px;margin-bottom:20px}
+.score-section{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px}
+.score-card{background:#161b22;border-radius:8px;padding:16px}
+.score-card h4{font-size:12px;color:#8b949e;margin-bottom:8px}
+.score-big{font-size:32px;font-weight:700}
+.score-label{font-size:11px;color:#8b949e;margin-top:4px}
+.section{background:#161b22;border-radius:8px;padding:16px;margin-bottom:16px}
+.section h3{font-size:14px;margin-bottom:12px;color:#58a6ff}
+.metric-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #21262d;font-size:13px}
+.metric-row:last-child{border-bottom:none}
+.metric-label{color:#8b949e}
+.moat-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.moat-tag{padding:4px 10px;border-radius:4px;font-size:11px;background:#1f6feb22;color:#58a6ff;border:1px solid #1f6feb44}
+.refresh-btn{background:#21262d;border:1px solid #30363d;color:#8b949e;padding:4px 12px;border-radius:6px;cursor:pointer;font-size:12px;transition:all 0.2s}
+.refresh-btn:hover{background:#30363d;color:#e6edf3}
+.refresh-btn.refreshing{color:#58a6ff;animation:spin 1s linear infinite}
+@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+.dashboard-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;padding:12px 12px 0}
+.dash-col{background:#161b22;border-radius:8px;padding:12px}
+.dash-title{font-size:11px;color:#8b949e;margin-bottom:8px;font-weight:600}
+.dash-item{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #21262d;font-size:12px;cursor:pointer;color:#e6edf3}
+.dash-item:last-child{border-bottom:none}
+.dash-item:hover{color:#58a6ff}
+.dash-rank{display:flex;align-items:center;gap:8px}
+.rank-num{width:18px;height:18px;border-radius:50%;background:#1f6feb;color:#fff;font-size:10px;display:flex;align-items:center;justify-content:center}
+.portfolio-panel,.signals-panel,.data-panel{background:#0d1117;min-height:100%;padding:20px}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState } = React;
+
+const MOCK = {
+  "600519.SH": {
+    name: "贵州茅台", market: "CN", sector: "白酒", close: 1856,
+    pe_ratio: 35.2, roic: 0.342, score_overall: 92, score_moat: 88,
+    dcf_value: 1980,
+    metrics: { pb: 12.8, gross_margin: 0.918, net_margin: 0.502, revenue_growth: 0.175 },
+    moat_tags: ["无形资产（品牌）", "定价权", "网络效应", "低成本优势", "转换成本"],
+    ai_report: "贵州茅台拥有极强的品牌护城河，在中国高端白酒市场占据绝对主导地位。ROIC 持续保持 30%+，展现出卓越的资本配置能力。"
+  },
+  "AAPL": {
+    name: "苹果", market: "US", sector: "科技", close: 218,
+    pe_ratio: 28.1, roic: 0.28, score_overall: 88, score_moat: 82,
+    dcf_value: 245,
+    metrics: { pb: 45.2, gross_margin: 0.462, net_margin: 0.262, revenue_growth: 0.08 },
+    moat_tags: ["品牌壁垒", "生态锁定", "研发投入", "供应链优势"],
+    ai_report: "苹果拥有强大的生态系统和品牌忠诚度，ROIC 高达 28%，资本配置极为高效。"
+  },
+  "00700.HK": {
+    name: "腾讯控股", market: "HK", sector: "互联网", close: 428,
+    pe_ratio: 22.5, roic: 0.22, score_overall: 85, score_moat: 80,
+    dcf_value: 450,
+    metrics: { pb: 3.8, gross_margin: 0.52, net_margin: 0.28, revenue_growth: 0.10 },
+    moat_tags: ["网络效应", "生态锁定", "高利润率"],
+    ai_report: "腾讯拥有中国最大的社交网络，网络效应极强，多元化业务提供稳定现金流。"
+  },
+  "KO": {
+    name: "可口可乐", market: "US", sector: "消费", close: 62,
+    pe_ratio: 24.8, roic: 0.15, score_overall: 71, score_moat: 70,
+    dcf_value: 65,
+    metrics: { pb: 7.2, gross_margin: 0.40, net_margin: 0.22, revenue_growth: 0.03 },
+    moat_tags: ["全球品牌", "规模经济", "渠道优势", "定价权"],
+    ai_report: "典型的巴菲特式好生意，全球分销网络和稳定现金流。"
+  },
+  "601318.SH": {
+    name: "中国平安", market: "CN", sector: "金融保险", close: 48.5,
+    pe_ratio: 8.2, roic: 0.12, score_overall: 65, score_moat: 55,
+    dcf_value: 52,
+    metrics: { pb: 1.2, gross_margin: 0.28, net_margin: 0.10, revenue_growth: 0.04 },
+    moat_tags: ["牌照优势", "客户基础", "综合金融"],
+    ai_report: "国内领先的综合金融集团，但 ROIC 12% 显示资本效率一般。"
+  },
+  "000858.SZ": {
+    name: "五粮液", market: "CN", sector: "白酒", close: 168,
+    pe_ratio: 22.1, roic: 0.28, score_overall: 83, score_moat: 75,
+    dcf_value: 175,
+    metrics: { pb: 8.5, gross_margin: 0.75, net_margin: 0.35, revenue_growth: 0.12 },
+    moat_tags: ["品牌壁垒", "定价权", "规模经济"],
+    ai_report: "中国第二大高端白酒品牌，品牌护城河深厚，ROIC 28% 体现出优秀资本效率。"
+  },
+  "BRK.B": {
+    name: "伯克希尔哈撒韦", market: "US", sector: "综合", close: 398,
+    pe_ratio: 21.3, roic: 0.18, score_overall: 82, score_moat: 85,
+    dcf_value: 420,
+    metrics: { pb: 1.5, gross_margin: 0.32, net_margin: 0.20, revenue_growth: 0.06 },
+    moat_tags: ["低成本优势", "资本配置", "稳健经营"],
+    ai_report: "巴菲特自家公司，资本配置能力极强，运营现金流稳定，长期复合增长典范。"
+  },
+  "JNJ": {
+    name: "强生", market: "US", sector: "医疗健康", close: 158,
+    pe_ratio: 24.5, roic: 0.22, score_overall: 80, score_moat: 78,
+    dcf_value: 165,
+    metrics: { pb: 6.8, gross_margin: 0.68, net_margin: 0.18, revenue_growth: 0.05 },
+    moat_tags: ["研发壁垒", "品牌信任", "规模经济"],
+    ai_report: "全球最大医疗健康集团之一，品牌信任度和销售渠道无可比拟，ROE 22% 稳健。"
+  },
+  "600036.SH": {
+    name: "招商银行", market: "CN", sector: "银行", close: 38.2,
+    pe_ratio: 7.1, roic: 0.16, score_overall: 72, score_moat: 60,
+    dcf_value: 40,
+    metrics: { pb: 1.1, gross_margin: 0.35, net_margin: 0.28, revenue_growth: 0.07 },
+    moat_tags: ["零售客户优势", "风险管理", "网络效应"],
+    ai_report: "中国最好的零售银行之一，ROIC 16% 在银行业属优秀水平。"
+  },
+  "600900.SH": {
+    name: "长江电力", market: "CN", sector: "公用事业", close: 28.5,
+    pe_ratio: 18.2, roic: 0.11, score_overall: 62, score_moat: 58,
+    dcf_value: 30,
+    metrics: { pb: 2.1, gross_margin: 0.55, net_margin: 0.35, revenue_growth: 0.02 },
+    moat_tags: ["水资源垄断", "稳定现金流", "电价锁定"],
+    ai_report: "国内最大的水电上市公司，现金流稳定但成长性有限，适合防御性配置。"
+  },
+  "600276.SH": {
+    name: "恒瑞医药", market: "CN", sector: "医药", close: 62.8,
+    pe_ratio: 42.1, roic: 0.18, score_overall: 68, score_moat: 65,
+    dcf_value: 58,
+    metrics: { pb: 8.5, gross_margin: 0.82, net_margin: 0.18, revenue_growth: 0.15 },
+    moat_tags: ["研发壁垒", "创新药管线", "品牌信任"],
+    ai_report: "中国创新药龙头，ROIC 18% 显示良好的资本效率，但 PE 偏高。"
+  },
+  "002594.SZ": {
+    name: "比亚迪", market: "CN", sector: "汽车", close: 268,
+    pe_ratio: 32.5, roic: 0.14, score_overall: 60, score_moat: 50,
+    dcf_value: 240,
+    metrics: { pb: 5.8, gross_margin: 0.20, net_margin: 0.04, revenue_growth: 0.25 },
+    moat_tags: ["成本优势", "新能源技术", "垂直整合"],
+    ai_report: "中国新能源汽车领导者，但竞争激烈 ROIC 仅 14%，需观察护城河持续性。"
+  },
+  "600028.SH": {
+    name: "中国石化", market: "CN", sector: "能源", close: 6.2,
+    pe_ratio: 9.5, roic: 0.08, score_overall: 52, score_moat: 45,
+    dcf_value: 7,
+    metrics: { pb: 0.8, gross_margin: 0.16, net_margin: 0.02, revenue_growth: 0.03 },
+    moat_tags: ["规模优势", "渠道网络", "政策保护"],
+    ai_report: "上下游一体化能源巨头，ROIC 仅 8%，估值便宜但成长性有限。"
+  },
+  "MSFT": {
+    name: "微软", market: "US", sector: "科技", close: 378,
+    pe_ratio: 32.1, roic: 0.24, score_overall: 87, score_moat: 88,
+    dcf_value: 395,
+    metrics: { pb: 12.5, gross_margin: 0.70, net_margin: 0.35, revenue_growth: 0.12 },
+    moat_tags: ["操作系统锁定", "云计算垄断", "企业级生态", "研发壁垒"],
+    ai_report: "全球企业软件和云服务龙头，Azure 护城河极深，ROIC 24% 展现出卓越的资本效率。"
+  },
+  "JPM": {
+    name: "摩根大通", market: "US", sector: "金融", close: 168,
+    pe_ratio: 11.2, roic: 0.16, score_overall: 75, score_moat: 68,
+    dcf_value: 180,
+    metrics: { pb: 1.6, gross_margin: 0.45, net_margin: 0.30, revenue_growth: 0.08 },
+    moat_tags: ["全球品牌", "风险管理", "规模经济", "多元化业务"],
+    ai_report: "全球最大银行之一，资本效率稳健，Jamie Dimon 领导力强，ROIC 16%。"
+  },
+  "WMT": {
+    name: "沃尔玛", market: "US", sector: "零售", close: 62,
+    pe_ratio: 28.5, roic: 0.18, score_overall: 73, score_moat: 70,
+    dcf_value: 68,
+    metrics: { pb: 6.2, gross_margin: 0.25, net_margin: 0.03, revenue_growth: 0.05 },
+    moat_tags: ["规模优势", "供应链效率", "地理覆盖", "天天低价"],
+    ai_report: "全球最大零售商，供应链管理极致，ROIC 18% 在零售业属优秀水平。"
+  },
+  "NKE": {
+    name: "耐克", market: "US", sector: "消费", close: 98,
+    pe_ratio: 28.5, roic: 0.20, score_overall: 74, score_moat: 72,
+    dcf_value: 108,
+    metrics: { pb: 10.5, gross_margin: 0.44, net_margin: 0.10, revenue_growth: 0.06 },
+    moat_tags: ["品牌壁垒", "创新研发", "DTC渠道", "全球分销"],
+    ai_report: "全球运动品牌龙头，品牌护城河深厚，ROIC 20% 显示高效的资本配置。"
+  }
+};
+
+const STOCKS = Object.entries(MOCK).map(function(entry) {
+  var ticker = entry[0];
+  var d = entry[1];
+  return {
+    ticker: ticker,
+    name: d.name,
+    market: d.market,
+    sector: d.sector,
+    close: d.close,
+    pe_ratio: d.pe_ratio,
+    roic: d.roic,
+    score_overall: d.score_overall,
+    score_moat: d.score_moat,
+    dcf_value: d.dcf_value,
+    metrics: d.metrics,
+    moat_tags: d.moat_tags,
+    ai_report: d.ai_report,
+    discount: d.dcf_value > d.close ? ((d.dcf_value - d.close) / d.dcf_value * 100).toFixed(1) : 0
+  };
+});
+
+function scoreColor(s) {
+  if (s >= 80) return "score-a";
+  if (s >= 65) return "score-b";
+  return "score-c";
+}
+
+function scoreGrade(s) {
+  if (s >= 80) return "A";
+  if (s >= 65) return "B";
+  return "C";
+}
+
+function DashboardRow(props) {
+  var stocks = props.stocks;
+  var onSelect = props.onSelect;
+  var byRoc = stocks.slice().sort(function(a, b) { return b.roic - a.roic; }).slice(0, 5);
+  var byScore = stocks.slice().sort(function(a, b) { return b.score_overall - a.score_overall; }).slice(0, 5);
+  var byDiscount = stocks.filter(function(s) { return parseFloat(s.discount) > 0; })
+    .sort(function(a, b) { return b.discount - a.discount; }).slice(0, 5);
+  return React.createElement("div", { className: "dashboard-row" },
+    React.createElement("div", { className: "dash-col" },
+      React.createElement("div", { className: "dash-title" }, "资本效率 ROIC"),
+      byRoc.map(function(s, i) {
+        return React.createElement("div", { key: s.ticker, className: "dash-item", onClick: function() { onSelect(s.ticker); } },
+          React.createElement("span", { className: "dash-rank" },
+            React.createElement("span", { className: "rank-num" }, i + 1),
+            s.name
+          ),
+          React.createElement("span", null, (s.roic * 100).toFixed(1) + "%")
+        );
+      })
+    ),
+    React.createElement("div", { className: "dash-col" },
+      React.createElement("div", { className: "dash-title" }, "综合评分 TOP"),
+      byScore.map(function(s, i) {
+        return React.createElement("div", { key: s.ticker, className: "dash-item", onClick: function() { onSelect(s.ticker); } },
+          React.createElement("span", { className: "dash-rank" },
+            React.createElement("span", { className: "rank-num" }, i + 1),
+            s.name
+          ),
+          React.createElement("span", { className: "score-badge " + scoreColor(s.score_overall) }, s.score_overall)
+        );
+      })
+    ),
+    React.createElement("div", { className: "dash-col" },
+      React.createElement("div", { className: "dash-title" }, "价值低估 DCF折价"),
+      byDiscount.map(function(s, i) {
+        return React.createElement("div", { key: s.ticker, className: "dash-item", onClick: function() { onSelect(s.ticker); } },
+          React.createElement("span", { className: "dash-rank" },
+            React.createElement("span", { className: "rank-num" }, i + 1),
+            s.name
+          ),
+          React.createElement("span", { style: { color: "#58a6ff" } }, s.discount + "%")
+        );
+      })
+    )
+  );
+}
+
+function StockList(props) {
+  var stocks = props.stocks;
+  var selected = props.selected;
+  var onSelect = props.onSelect;
+  var filter = props.filter;
+  var filtered = filter === "all" ? stocks : stocks.filter(function(s) { return s.market === filter; });
+  return React.createElement("div", { className: "stock-list" },
+    filtered.map(function(s) {
+      return React.createElement("div", {
+        key: s.ticker,
+        className: "stock-card " + (selected === s.ticker ? "selected" : ""),
+        onClick: function() { onSelect(s.ticker); }
+      },
+        React.createElement("div", { className: "stock-header" },
+          React.createElement("span", { className: "stock-name" }, s.name),
+          React.createElement("span", { className: "score-badge " + scoreColor(s.score_overall) }, scoreGrade(s.score_overall))
+        ),
+        React.createElement("div", { className: "stock-meta" },
+          React.createElement("span", null, s.ticker),
+          React.createElement("span", null, s.sector),
+          React.createElement("span", null, (s.roic * 100).toFixed(0) + "% ROIC")
+        )
+      );
+    })
+  );
+}
+
+function StockDetail(props) {
+  var stock = props.stock;
+  if (!stock) {
+    return React.createElement("div", { className: "detail", style: { color: "#8b949e", padding: 40 } }, "选择一只股票查看详情");
+  }
+  var m = stock.metrics;
+  var mktLabel = stock.market === "CN" ? "A股" : stock.market === "HK" ? "港股" : "美股";
+  var prefix = stock.market === "CN" ? "¥" : stock.market === "HK" ? "HK$" : "$";
+  return React.createElement("div", { className: "detail" },
+    React.createElement("div", { className: "detail-title" }, stock.name),
+    React.createElement("div", { className: "detail-sub" }, stock.ticker + " · " + mktLabel + " · " + stock.sector),
+    React.createElement("div", { className: "score-section" },
+      React.createElement("div", { className: "score-card" },
+        React.createElement("h4", null, "综合评分"),
+        React.createElement("div", { className: "score-big", style: { color: "#58a6ff" } }, stock.score_overall),
+        React.createElement("div", { className: "score-label" }, "护城河 " + stock.score_moat + " / 成长性 " + Math.round(stock.score_overall - stock.score_moat * 0.8))
+      ),
+      React.createElement("div", { className: "score-card" },
+        React.createElement("h4", null, "DCF 估值"),
+        React.createElement("div", { className: "score-big", style: { color: parseFloat(stock.discount) > 0 ? "#f85149" : "#3fb950" } }, stock.dcf_value),
+        React.createElement("div", { className: "score-label" }, prefix + stock.close + " · " + (parseFloat(stock.discount) > 0 ? "低估 " + stock.discount + "%" : "合理"))
+      )
+    ),
+    React.createElement("div", { className: "section" },
+      React.createElement("h3", null, "关键指标"),
+      React.createElement("div", { className: "metric-row" }, React.createElement("span", { className: "metric-label" }, "ROIC"), React.createElement("span", null, (stock.roic * 100).toFixed(1) + "%")),
+      React.createElement("div", { className: "metric-row" }, React.createElement("span", { className: "metric-label" }, "PE"), React.createElement("span", null, stock.pe_ratio)),
+      React.createElement("div", { className: "metric-row" }, React.createElement("span", { className: "metric-label" }, "PB"), React.createElement("span", null, m.pb)),
+      React.createElement("div", { className: "metric-row" }, React.createElement("span", { className: "metric-label" }, "毛利率"), React.createElement("span", null, (m.gross_margin * 100).toFixed(1) + "%")),
+      React.createElement("div", { className: "metric-row" }, React.createElement("span", { className: "metric-label" }, "净利率"), React.createElement("span", null, (m.net_margin * 100).toFixed(1) + "%")),
+      React.createElement("div", { className: "metric-row" }, React.createElement("span", { className: "metric-label" }, "营收增长"), React.createElement("span", null, (m.revenue_growth * 100).toFixed(1) + "%"))
+    ),
+    React.createElement("div", { className: "section" },
+      React.createElement("h3", null, "护城河分析"),
+      React.createElement("div", { className: "moat-tags" },
+        stock.moat_tags.map(function(tag) {
+          return React.createElement("span", { key: tag, className: "moat-tag" }, tag);
+        })
+      )
+    ),
+    React.createElement("div", { className: "section" },
+      React.createElement("h3", null, "AI 综合判断"),
+      React.createElement("p", { style: { fontSize: 13, lineHeight: 1.7, color: "#e6edf3" } }, stock.ai_report)
+    )
+  );
+}
+
+function PortfolioPanel() {
+  return React.createElement("div", { className: "portfolio-panel" },
+    React.createElement("div", { className: "section" },
+      React.createElement("h3", null, "持仓追踪"),
+      React.createElement("div", { style: { color: "#8b949e", fontSize: 13, marginBottom: 16 } }, "暂无持仓数据"),
+      React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 } },
+        React.createElement("div", { className: "score-card" },
+          React.createElement("h4", null, "持仓数量"),
+          React.createElement("div", { className: "score-big", style: { color: "#8b949e" } }, "0"),
+          React.createElement("div", { className: "score-label" }, "股票")
+        ),
+        React.createElement("div", { className: "score-card" },
+          React.createElement("h4", null, "持仓市值"),
+          React.createElement("div", { className: "score-big", style: { color: "#8b949e" } }, "¥0"),
+          React.createElement("div", { className: "score-label" }, "人民币")
+        ),
+        React.createElement("div", { className: "score-card" },
+          React.createElement("h4", null, "持仓收益"),
+          React.createElement("div", { className: "score-big", style: { color: "#8b949e" } }, "--"),
+          React.createElement("div", { className: "score-label" }, "累计")
+        )
+      )
+    ),
+    React.createElement("div", { className: "section" },
+      React.createElement("h3", null, "组合健康度"),
+      React.createElement("div", { style: { fontSize: 13, color: "#8b949e" } }, "Phase 2 功能：持仓分析、风险敞口、收益归因")
+    )
+  );
+}
+
+function SignalsPanel() {
+  var signals = [
+    { ticker: "600519.SH", name: "贵州茅台", signal: "买入", reason: "DCF折价 6.3%，ROIC 34.2%，护城河深厚", color: "#3fb950" },
+    { ticker: "AAPL", name: "苹果", signal: "持有", reason: "合理估值，生态护城河稳固", color: "#58a6ff" },
+    { ticker: "MSFT", name: "微软", signal: "买入", reason: "DCF折价 4.3%，云计算护城河极深", color: "#3fb950" },
+    { ticker: "JPM", name: "摩根大通", signal: "买入", reason: "DCF折价 6.7%，估值偏低", color: "#3fb950" },
+    { ticker: "600036.SH", name: "招商银行", signal: "持有", reason: "估值合理，零售银行护城河稳固", color: "#58a6ff" }
+  ];
+  return React.createElement("div", { className: "signals-panel" },
+    React.createElement("div", { className: "section" },
+      React.createElement("h3", null, "决策信号"),
+      signals.map(function(sig) {
+        return React.createElement("div", {
+          key: sig.ticker,
+          style: { display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderBottom: "1px solid #21262d" }
+        },
+          React.createElement("span", { style: { width: 60, fontWeight: 600, fontSize: 13 } }, sig.name),
+          React.createElement("span", {
+            style: {
+              padding: "2px 8px",
+              borderRadius: 4,
+              fontSize: 11,
+              fontWeight: 600,
+              background: sig.color + "22",
+              color: sig.color,
+              border: "1px solid " + sig.color + "44"
+            }
+          }, sig.signal),
+          React.createElement("span", { style: { fontSize: 12, color: "#8b949e", flex: 1 } }, sig.reason)
+        );
+      })
+    ),
+    React.createElement("div", { style: { fontSize: 12, color: "#8b949e", marginTop: 16 } }, "Phase 3 功能：实时信号推送、风险提示、买卖提醒")
+  );
+}
+
+function DataPanel() {
+  var cnCount = STOCKS.filter(function(s) { return s.market === "CN"; }).length;
+  var hkCount = STOCKS.filter(function(s) { return s.market === "HK"; }).length;
+  var usCount = STOCKS.filter(function(s) { return s.market === "US"; }).length;
+  return React.createElement("div", { className: "data-panel" },
+    React.createElement("div", { className: "section" },
+      React.createElement("h3", null, "数据管理"),
+      React.createElement("div", { className: "metric-row" }, React.createElement("span", { className: "metric-label" }, "股票数量"), React.createElement("span", null, STOCKS.length + " 只")),
+      React.createElement("div", { className: "metric-row" }, React.createElement("span", { className: "metric-label" }, "A股"), React.createElement("span", null, cnCount + " 只")),
+      React.createElement("div", { className: "metric-row" }, React.createElement("span", { className: "metric-label" }, "港股"), React.createElement("span", null, hkCount + " 只")),
+      React.createElement("div", { className: "metric-row" }, React.createElement("span", { className: "metric-label" }, "美股"), React.createElement("span", null, usCount + " 只")),
+      React.createElement("div", { className: "metric-row" }, React.createElement("span", { className: "metric-label" }, "数据源"), React.createElement("span", null, "yfinance + akshare")),
+      React.createElement("div", { className: "metric-row" }, React.createElement("span", { className: "metric-label" }, "刷新策略"), React.createElement("span", null, "每 4 小时定时")),
+      React.createElement("div", { className: "metric-row" }, React.createElement("span", { className: "metric-label" }, "本地缓存"), React.createElement("span", null, "SQLite"))
+    ),
+    React.createElement("div", { className: "section" },
+      React.createElement("h3", null, "数据库状态"),
+      React.createElement("div", { className: "metric-row" }, React.createElement("span", { className: "metric-label" }, "数据库文件"), React.createElement("span", null, "D:/buffett-dashboard/data/buffett.db")),
+      React.createElement("div", { className: "metric-row" }, React.createElement("span", { className: "metric-label" }, "连接状态"), React.createElement("span", { style: { color: "#3fb950" } }, "正常")),
+      React.createElement("div", { className: "metric-row" }, React.createElement("span", { className: "metric-label" }, "最后更新"), React.createElement("span", null, new Date().toLocaleString("zh-CN")))
+    ),
+    React.createElement("div", { style: { fontSize: 12, color: "#8b949e", marginTop: 16 } }, "Phase 2 功能：数据导出、自定义数据源、数据清洗")
+  );
+}
+
+function App() {
+  var _useState = useState("stocks");
+  var nav = _useState[0];
+  var setNav = _useState[1];
+  var _useState2 = useState("600519.SH");
+  var selected = _useState2[0];
+  var setSelected = _useState2[1];
+  var _useState3 = useState("all");
+  var filter = _useState3[0];
+  var setFilter = _useState3[1];
+  var _useState4 = useState(false);
+  var refreshing = _useState4[0];
+  var setRefreshing = _useState4[1];
+  var _useState5 = useState(new Date().toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" }));
+  var refreshTime = _useState5[0];
+  var setRefreshTime = _useState5[1];
+
+  var handleRefresh = function() {
+    setRefreshing(true);
+    setTimeout(function() {
+      setRefreshTime(new Date().toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" }));
+      setRefreshing(false);
+    }, 1500);
+  };
+
+  var selectedStock = MOCK[selected];
+  var navItems = [
+    { key: "stocks", label: "股票" },
+    { key: "portfolio", label: "持仓" },
+    { key: "signals", label: "信号" },
+    { key: "data", label: "数据" }
+  ];
+  var filterItems = [
+    { value: "all", label: "全部" },
+    { value: "CN", label: "A股" },
+    { value: "US", label: "美股" },
+    { value: "HK", label: "港股" }
+  ];
+
+  return React.createElement("div", { className: "app" },
+    React.createElement("div", { className: "sidebar" },
+      React.createElement("div", { className: "logo" }, "BuffettDash"),
+      React.createElement("div", { className: "nav" },
+        navItems.map(function(item) {
+          return React.createElement("div", {
+            key: item.key,
+            className: "nav-item " + (nav === item.key ? "active" : ""),
+            onClick: function() { setNav(item.key); }
+          }, item.label);
+        })
+      )
+    ),
+    React.createElement("div", { className: "main" },
+      React.createElement("div", { className: "topbar" },
+        React.createElement("div", { className: "filters" },
+          filterItems.map(function(f) {
+            return React.createElement("span", {
+              key: f.value,
+              className: "tag " + (filter === f.value ? "active" : ""),
+              onClick: function() { setFilter(f.value); }
+            }, f.label);
+          })
+        ),
+        React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8 } },
+          React.createElement("span", { style: { fontSize: 12, color: "#8b949e" } }, "更新于 " + refreshTime),
+          React.createElement("button", {
+            className: "refresh-btn " + (refreshing ? "refreshing" : ""),
+            onClick: handleRefresh
+          }, refreshing ? "刷新中..." : "刷新")
+        )
+      ),
+      nav === "stocks" && React.createElement("div", null,
+        React.createElement(DashboardRow, { stocks: STOCKS, onSelect: setSelected }),
+        React.createElement("div", { className: "content" },
+          React.createElement(StockList, { stocks: STOCKS, selected: selected, onSelect: setSelected, filter: filter }),
+          React.createElement(StockDetail, { stock: selectedStock })
+        )
+      ),
+      nav === "portfolio" && React.createElement(PortfolioPanel, null),
+      nav === "signals" && React.createElement(SignalsPanel, null),
+      nav === "data" && React.createElement(DataPanel, null)
+    )
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App, null));
+</script>
+</body>
+</html>
