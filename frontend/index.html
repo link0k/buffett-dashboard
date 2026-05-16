@@ -738,13 +738,13 @@ function App() {
         )
       ),
       nav === "stocks" && React.createElement("div", null,
-        React.createElement(DashboardRow, { stocks: STOCKS, onSelect: setSelected }),
+        React.createElement(DashboardRow, { stocks: fetchedStocks, onSelect: setSelected }),
         React.createElement("div", { className: "content" },
-          React.createElement(StockList, { stocks: STOCKS, selected: selected, onSelect: setSelected, filter: filter, watchlist: watchlist, onToggle: toggleWatchlist }),
+          React.createElement(StockList, { stocks: fetchedStocks, selected: selected, onSelect: setSelected, filter: filter, watchlist: watchlist, onToggle: toggleWatchlist }),
           React.createElement(StockDetail, { stock: selectedStock })
         )
       ),
-      nav === "watchlist" && React.createElement(WatchlistPanel, { watchlist: watchlist, stocks: STOCKS, selected: selected, onSelect: setSelected, onToggle: toggleWatchlist }),
+      nav === "watchlist" && React.createElement(WatchlistPanel, { watchlist: watchlist, stocks: fetchedStocks, selected: selected, onSelect: setSelected, onToggle: toggleWatchlist }),
       nav === "portfolio" && React.createElement(PortfolioPanel, null),
       nav === "signals" && React.createElement(SignalsPanel, null),
       nav === "data" && React.createElement(DataPanel, null)
