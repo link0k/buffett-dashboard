@@ -531,13 +531,56 @@ function WatchlistPanel(props) {
         React.createElement("span", null, "+ 添加股票")
       )
     ),
-wl-count", style: { color: isUndervalued ? "#3fb950" : "#f85149" } },
-              isUndervalued ? "低估 " + discount + "%" : "溢价 " + Math.abs(discount) + "%"
-            )
-          ),
-          React.createElement("div", { className: "wl-roic" }, "ROIC " + (stock.roic * 100).toFixed(1) + "%")
-        );
-      })
+    watchlistStocks.length === 0 ? React.createElement("div", { className: "section", style: { marginTop: 20 } },
+      React.createElement("div", { style: { color: "#8b949e", fontSize: 13, padding: "20px 0", textAlign: "center" } }, "暂无自选股，点击「添加股票」开始")
+    ) : React.createElement("div", null,
+      React.createElement("div", { className: "watchlist-summary" },
+        React.createElement("div", { className: "watchlist-stat" },
+          React.createElement("div", { className: "watchlist-stat-num" }, watchlistStocks.length),
+          React.createElement("div", { className: "watchlist-stat-label" }, "自选数")
+        ),
+        React.createElement("div", { className: "watchlist-stat" },
+          React.createElement("div", { className: "watchlist-stat-num", style: { color: "#58a6ff" } }, totalScore),
+          React.createElement("div", { className: "watchlist-stat-label" }, "平均评分")
+        ),
+        React.createElement("div", { className: "watchlist-stat" },
+          React.createElement("div", { className: "watchlist-stat-num", style: { color: "#3fb950" } }, watchlistStocks.filter(function(s) { return s.dcf_value > s.close; }).length),
+          React.createElement("div", { className: "watchlist-stat-label" }, "低估机会")
+        ),
+        React.createElement("div", { className: "watchlist-stat" },
+          React.createElement("div", { className: "watchlist-stat-num", style: { color: "#f85149" } }, watchlistStocks.filter(function(s) { return s.dcf_value < s.close; }).length),
+          React.createElement("div", { className: "watchlist-stat-label" }, "高估提醒")
+        )
+      ),
+      React.createElement("div", { className: "watchlist-grid" },
+        watchlistStocks.map(function(stock) {
+          var mktLabel = stock.market === "CN" ? "A股" : stock.market === "HK" ? "港股" : "美股";
+          var prefix = stock.market === "CN" ? "¥" : stock.market === "HK" ? "HK$" : "$";
+          var isUndervalued = stock.dcf_value > stock.close;
+          var discount = stock.dcf_value > 0 ? Math.round((1 - stock.close / stock.dcf_value) * 100) : 0;
+          return React.createElement("div", {
+            key: stock.ticker,
+            className: "watchlist-card " + (selected === stock.ticker ? "selected" : ""),
+            onClick: function() { onSelect(stock.ticker); }
+          },
+            React.createElement("div", { className: "wl-card-header" },
+              React.createElement("div", null,
+                React.createElement("div", { className: "wl-name" }, stock.name),
+                React.createElement("div", { className: "wl-meta" }, stock.ticker, " · ", mktLabel)
+              ),
+              React.createElement("div", { className: "wl-star active", onClick: function(e) { e.stopPropagation(); onToggle(stock.ticker); } }, "★")
+            ),
+            React.createElement("div", { className: "wl-price" }, prefix + stock.close),
+            React.createElement("div", { className: "wl-footer" },
+              React.createElement("div", { className: "wl-score " + (stock.score_overall >= 80 ? "score-a" : stock.score_overall >= 65 ? "score-b" : "score-c") }, stock.score_overall),
+              React.createElement("div", { className: "wl-discount", style: { color: isUndervalued ? "#3fb950" : "#f85149" } },
+                isUndervalued ? "低估 " + discount + "%" : "溢价 " + Math.abs(discount) + "%"
+              )
+            ),
+            React.createElement("div", { className: "wl-roic" }, "ROIC " + (stock.roic * 100).toFixed(1) + "%")
+          );
+        })
+      )
     )
   );
 }
