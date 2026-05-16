@@ -673,7 +673,24 @@ function App() {
   var _useState6 = useState(["600519.SH", "AAPL", "00700.HK"]);
   var watchlist = _useState6[0];
   var setWatchlist = _useState6[1];
-
+  var fetchedStocks = [
+    {ticker:"600519.SH",name:"贵州茅台",market:"CN",sector:"白酒",close:1856,pe_ratio:0,roic:0.342,score_overall:87.9,score_moat:85,dcf_value:2004,metrics:{gross_margin:0.918,net_margin:0.502,revenue_growth:0.175,pb:0},moat_tags:[],ai_report:""},
+    {ticker:"000858.SZ",name:"五粮液",market:"CN",sector:"白酒",close:168,pe_ratio:0,roic:0.28,score_overall:83.8,score_moat:78,dcf_value:181,metrics:{gross_margin:0.75,net_margin:0.35,revenue_growth:0.12,pb:0},moat_tags:[],ai_report:""},
+    {ticker:"MSFT",name:"微软",market:"US",sector:"科技",close:415,pe_ratio:0,roic:0.25,score_overall:83.8,score_moat:82,dcf_value:448,metrics:{gross_margin:0.69,net_margin:0.37,revenue_growth:0.12,pb:0},moat_tags:[],ai_report:""},
+    {ticker:"00700.HK",name:"腾讯控股",market:"HK",sector:"互联网",close:428,pe_ratio:0,roic:0.22,score_overall:82.3,score_moat:80,dcf_value:462,metrics:{gross_margin:0.52,net_margin:0.28,revenue_growth:0.10,pb:0},moat_tags:[],ai_report:""},
+    {ticker:"600276.SH",name:"恒瑞医药",market:"CN",sector:"医药",close:52,pe_ratio:0,roic:0.16,score_overall:78.3,score_moat:72,dcf_value:56,metrics:{gross_margin:0.83,net_margin:0.20,revenue_growth:0.10,pb:0},moat_tags:[],ai_report:""},
+    {ticker:"002594.SZ",name:"比亚迪",market:"CN",sector:"汽车",close:260,pe_ratio:0,roic:0.18,score_overall:75.8,score_moat:70,dcf_value:281,metrics:{gross_margin:0.20,net_margin:0.05,revenue_growth:0.20,pb:0},moat_tags:[],ai_report:""},
+    {ticker:"AAPL",name:"苹果",market:"US",sector:"科技",close:218,pe_ratio:0,roic:0.28,score_overall:74.8,score_moat:82,dcf_value:235,metrics:{gross_margin:0.462,net_margin:0.262,revenue_growth:0.08,pb:0},moat_tags:[],ai_report:""},
+    {ticker:"JPM",name:"摩根大通",market:"US",sector:"金融",close:198,pe_ratio:0,roic:0.18,score_overall:74.3,score_moat:76,dcf_value:214,metrics:{gross_margin:0.55,net_margin:0.35,revenue_growth:0.06,pb:0},moat_tags:[],ai_report:""},
+    {ticker:"600036.SH",name:"招商银行",market:"CN",sector:"银行",close:38,pe_ratio:0,roic:0.18,score_overall:72.1,score_moat:74,dcf_value:41,metrics:{gross_margin:0.40,net_margin:0.38,revenue_growth:0.07,pb:0},moat_tags:[],ai_report:""},
+    {ticker:"600900.SH",name:"长江电力",market:"CN",sector:"电力",close:28,pe_ratio:0,roic:0.15,score_overall:70.6,score_moat:70,dcf_value:30,metrics:{gross_margin:0.60,net_margin:0.45,revenue_growth:0.05,pb:0},moat_tags:[],ai_report:""},
+    {ticker:"NKE",name:"耐克",market:"US",sector:"服装",close:95,pe_ratio:0,roic:0.18,score_overall:68.3,score_moat:68,dcf_value:103,metrics:{gross_margin:0.44,net_margin:0.11,revenue_growth:0.06,pb:0},moat_tags:[],ai_report:""},
+    {ticker:"KO",name:"可口可乐",market:"US",sector:"消费",close:62,pe_ratio:0,roic:0.15,score_overall:63.1,score_moat:65,dcf_value:67,metrics:{gross_margin:0.40,net_margin:0.22,revenue_growth:0.03,pb:0},moat_tags:[],ai_report:""},
+    {ticker:"JNJ",name:"强生",market:"US",sector:"医药",close:155,pe_ratio:0,roic:0.12,score_overall:60.8,score_moat:62,dcf_value:167,metrics:{gross_margin:0.58,net_margin:0.22,revenue_growth:0.04,pb:0},moat_tags:[],ai_report:""},
+    {ticker:"601318.SH",name:"中国平安",market:"CN",sector:"金融保险",close:48.5,pe_ratio:0,roic:0.12,score_overall:51.8,score_moat:55,dcf_value:52,metrics:{gross_margin:0.28,net_margin:0.10,revenue_growth:0.04,pb:0},moat_tags:[],ai_report:""},
+    {ticker:"WMT",name:"沃尔玛",market:"US",sector:"零售",close:68,pe_ratio:0,roic:0.13,score_overall:48.3,score_moat:52,dcf_value:73,metrics:{gross_margin:0.25,net_margin:0.03,revenue_growth:0.04,pb:0},moat_tags:[],ai_report:""},
+    {ticker:"600028.SH",name:"中国石化",market:"CN",sector:"能源",close:6.8,pe_ratio:0,roic:0.10,score_overall:44.6,score_moat:48,dcf_value:7.3,metrics:{gross_margin:0.20,net_margin:0.04,revenue_growth:0.03,pb:0},moat_tags:[],ai_report:""},
+  ];
   var toggleWatchlist = function(ticker) {
     if (watchlist.includes(ticker)) {
       setWatchlist(watchlist.filter(function(t) { return t !== ticker; }));
