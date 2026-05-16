@@ -522,7 +522,7 @@ function WatchlistPanel(props) {
             );
           })
         ),
-        searchQuery.trim().length > 0 && searchResults.length === 0 && React.createElement("div", { className: "modal-no-result" }, "未找到匹配股票")
+        searchQuery.trim().length > 0 && searchResults.length === 0 && React.createElement("div", { className: "modal-no-result" }, "未找到匹配股票：", searchQuery, "（共", stocks.length, "只股票）")
       )
     ),
     React.createElement("div", { className: "watchlist-toolbar" },
