@@ -1,3 +1,7 @@
+.claude/
+debug_screenshot*.png
+server.log
+scripts/
 __pycache__/
 *.pyc
 *.pyo

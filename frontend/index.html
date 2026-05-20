@@ -4,271 +4,249 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>BuffettDash - 巴菲特选股仪表盘</title>
-<script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-<script src="https://unpkg.com/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.production.min.js" crossorigin></script>
+<script src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.23.5/babel.min.js" crossorigin></script>
+<script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js" crossorigin></script>
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+:root{
+  --bg-primary:#f8f5ff;
+  --bg-secondary:#eeeaff;
+  --bg-card:#ffffff;
+  --bg-card-hover:#f3efff;
+  --border:#e0d8f5;
+  --border-light:#c8bce8;
+  --text-primary:#2d2640;
+  --text-secondary:#6b5f8a;
+  --text-muted:#978bb5;
+  --accent-pink:#ff4d85;
+  --accent-pink-glow:rgba(255,77,133,0.12);
+  --accent-cyan:#00bcd4;
+  --accent-cyan-glow:rgba(0,188,212,0.1);
+  --accent-green:#2ecc71;
+  --accent-yellow:#f1c40f;
+  --accent-red:#e74c3c;
+  --accent-orange:#f39c12;
+  --accent-purple:#9b59b6;
+  --radius-sm:10px;
+  --radius-md:16px;
+  --radius-lg:22px;
+}
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0d1117;color:#e6edf3;height:100vh;overflow:hidden}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:linear-gradient(180deg,var(--accent-pink),var(--accent-purple));border-radius:4px;opacity:0.6}
+::-webkit-scrollbar-thumb:hover{background:linear-gradient(180deg,var(--accent-pink),var(--accent-cyan))}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg-primary);color:var(--text-primary);height:100vh;overflow:hidden}
 .app{display:flex;height:100vh}
-.sidebar{width:220px;background:#161b22;border-right:1px solid #30363d;display:flex;flex-direction:column}
-.logo{padding:20px 16px;font-size:18px;font-weight:700;color:#58a6ff;border-bottom:1px solid #30363d}
-.nav{padding:12px 0;flex:1}
-.nav-item{padding:10px 16px;cursor:pointer;color:#8b949e;font-size:14px}
-.nav-item:hover,.nav-item.active{background:#21262d;color:#e6edf3}
-.nav-item.active{border-left:3px solid #58a6ff}
-.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
-.topbar{padding:12px 20px;background:#161b22;border-bottom:1px solid #30363d;display:flex;align-items:center;justify-content:space-between}
-.filters{display:flex;gap:12px}
-.tag{padding:4px 10px;border-radius:12px;font-size:12px;cursor:pointer;background:#21262d;color:#8b949e}
-.tag.active{background:#1f6feb;color:#fff}
-.content{flex:1;display:flex;overflow:hidden}
-.stock-list{width:380px;border-right:1px solid #30363d;overflow-y:auto;padding:8px}
-.stock-card{padding:12px;border-radius:8px;margin-bottom:6px;cursor:pointer;border:1px solid transparent}
-.stock-card:hover,.stock-card.selected{background:#161b22;border-color:#58a6ff}
-.stock-header{display:flex;justify-content:space-between;margin-bottom:6px}
-.stock-name{font-weight:600;font-size:14px}
-.stock-meta{display:flex;gap:12px;font-size:12px;color:#8b949e}
-.score-badge{padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600}
-.score-a{background:#238636;color:#fff}
-.score-b{background:#9e6a03;color:#fff}
-.score-c{background:#6e7681;color:#fff}
-.detail{flex:1;overflow-y:auto;padding:20px}
-.detail-title{font-size:24px;font-weight:700;margin-bottom:4px}
-.detail-sub{color:#8b949e;font-size:13px;margin-bottom:20px}
-.score-section{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px}
-.score-card{background:#161b22;border-radius:8px;padding:16px}
-.score-card h4{font-size:12px;color:#8b949e;margin-bottom:8px}
-.score-big{font-size:32px;font-weight:700}
-.score-label{font-size:11px;color:#8b949e;margin-top:4px}
-.section{background:#161b22;border-radius:8px;padding:16px;margin-bottom:16px}
-.section h3{font-size:14px;margin-bottom:12px;color:#58a6ff}
-.metric-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #21262d;font-size:13px}
-.metric-row:last-child{border-bottom:none}
-.metric-label{color:#8b949e}
-.moat-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
-.moat-tag{padding:4px 10px;border-radius:4px;font-size:11px;background:#1f6feb22;color:#58a6ff;border:1px solid #1f6feb44}
-.refresh-btn{background:#21262d;border:1px solid #30363d;color:#8b949e;padding:4px 12px;border-radius:6px;cursor:pointer;font-size:12px;transition:all 0.2s}
-.refresh-btn:hover{background:#30363d;color:#e6edf3}
-.refresh-btn.refreshing{color:#58a6ff;animation:spin 1s linear infinite}
-.chart-container{background:#161b22;border-radius:8px;padding:16px;margin-bottom:16px;height:280px}
-.chart-title{font-size:14px;margin-bottom:12px;color:#58a6ff}
 
-@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
-.dashboard-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;padding:12px 12px 0}
-.dash-col{background:#161b22;border-radius:8px;padding:12px}
-.dash-title{font-size:11px;color:#8b949e;margin-bottom:8px;font-weight:600}
-.dash-item{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #21262d;font-size:12px;cursor:pointer;color:#e6edf3}
+/* playful floating bg dots */
+body::after{content:'';position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;
+  background-image:radial-gradient(circle at 15% 25%,rgba(255,77,133,0.08) 0,transparent 50%),
+                   radial-gradient(circle at 85% 75%,rgba(0,188,212,0.07) 0,transparent 50%),
+                   radial-gradient(circle at 50% 50%,rgba(155,89,182,0.05) 0,transparent 50%)}
+
+/* sidebar */
+.sidebar{width:230px;background:linear-gradient(180deg,var(--bg-secondary) 0%,#e8e0ff 100%);border-right:1px solid var(--border);display:flex;flex-direction:column;position:relative;z-index:1}
+.sidebar-footer{margin-top:auto;padding:16px 20px;border-top:1px solid var(--border);font-size:14px;color:var(--text-muted)}
+.logo{padding:24px 20px 18px;font-size:20px;font-weight:800;background:linear-gradient(135deg,var(--accent-pink),var(--accent-cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-0.3px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border)}
+.logo::before{content:'🪄';font-size:18px;-webkit-text-fill-color:initial;color:var(--accent-pink);animation:wiggle 3s ease-in-out infinite}
+.logo span{font-weight:400;color:var(--text-muted);font-size:14px;margin-left:auto;-webkit-text-fill-color:initial;color:var(--text-muted)}
+.nav{padding:16px 10px;flex:1}
+.nav-item{padding:12px 14px;margin-bottom:4px;cursor:pointer;color:var(--text-secondary);font-size:15px;font-weight:500;border-radius:var(--radius-md);transition:all 0.2s cubic-bezier(0.34,1.56,0.64,1);display:flex;align-items:center;gap:10px}
+.nav-item:hover{background:var(--bg-card);color:var(--text-primary);transform:translateX(4px) scale(1.02)}
+.nav-item.active{background:linear-gradient(135deg,var(--accent-pink-glow),var(--accent-cyan-glow));color:var(--accent-cyan);font-weight:600;box-shadow:inset 3px 0 0 var(--accent-pink);transform:scale(1.03)}
+.nav-item .nav-icon{width:20px;font-size:14px;text-align:center}
+
+/* main */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;position:relative;z-index:1}
+.topbar{padding:14px 24px;background:var(--bg-secondary);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.topbar-title{font-size:17px;font-weight:700;background:linear-gradient(135deg,var(--text-primary),var(--accent-pink));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.filters{display:flex;gap:6px}
+.tag{padding:6px 16px;border-radius:20px;font-size:14px;font-weight:500;cursor:pointer;background:var(--bg-card);color:var(--text-secondary);border:1px solid var(--border);transition:all 0.2s cubic-bezier(0.34,1.56,0.64,1)}
+.tag:hover{border-color:var(--accent-cyan);color:var(--accent-cyan);transform:translateY(-2px)}
+.tag.active{background:linear-gradient(135deg,var(--accent-pink),var(--accent-purple));color:#fff;border-color:transparent;box-shadow:0 4px 15px rgba(255,77,133,0.2)}
+
+/* stock list */
+.content{flex:1;display:flex;overflow:hidden}
+.stock-list{width:380px;border-right:1px solid var(--border);overflow-y:auto;padding:10px}
+.stock-card{padding:13px 14px;border-radius:var(--radius-md);margin-bottom:8px;cursor:pointer;border:2px solid transparent;transition:all 0.2s cubic-bezier(0.34,1.56,0.64,1)}
+.stock-card:hover,.stock-card.selected{background:var(--bg-card);border-color:var(--accent-cyan);transform:translateX(6px) scale(1.01);box-shadow:0 8px 25px rgba(0,188,212,0.08)}
+.stock-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
+.stock-name{font-weight:600;font-size:15px}
+.stock-meta{display:flex;gap:12px;font-size:14px;color:var(--text-secondary)}
+.score-badge{padding:3px 11px;border-radius:20px;font-size:12px;font-weight:700;letter-spacing:0.3px;transition:all 0.2s}
+.score-a{background:linear-gradient(135deg,rgba(125,223,125,0.2),rgba(125,223,125,0.05));color:var(--accent-green);border:1px solid rgba(125,223,125,0.3)}
+.score-b{background:linear-gradient(135deg,rgba(255,217,61,0.2),rgba(255,217,61,0.05));color:var(--accent-yellow);border:1px solid rgba(255,217,61,0.3)}
+.score-c{background:linear-gradient(135deg,rgba(112,103,160,0.3),rgba(112,103,160,0.1));color:var(--text-muted);border:1px solid rgba(112,103,160,0.3)}
+.score-badge:hover{transform:scale(1.15)}
+
+/* detail panel */
+.detail{flex:1;overflow-y:auto;padding:24px}
+.detail-title{font-size:28px;font-weight:800;margin-bottom:2px;letter-spacing:-0.5px;background:linear-gradient(135deg,var(--text-primary),var(--accent-pink));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.detail-sub{color:var(--text-secondary);font-size:15px;margin-bottom:22px}
+.score-section{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:22px}
+.score-card{background:var(--bg-card);border-radius:var(--radius-md);padding:18px;border:1px solid var(--border);position:relative;overflow:hidden}
+.score-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent-pink),var(--accent-cyan),var(--accent-purple));animation:rainbow-slide 3s linear infinite;background-size:200% 100%}
+.score-card h4{font-size:14px;color:var(--text-secondary);margin-bottom:6px;font-weight:500;text-transform:uppercase;letter-spacing:0.5px}
+.score-big{font-size:36px;font-weight:800;line-height:1.1}
+.score-label{font-size:14px;color:var(--text-secondary);margin-top:6px}
+.section{background:var(--bg-card);border-radius:var(--radius-md);padding:18px;margin-bottom:14px;border:1px solid var(--border);transition:all 0.2s cubic-bezier(0.34,1.56,0.64,1)}
+.section:hover{border-color:var(--border-light);transform:translateY(-2px);box-shadow:0 8px 30px rgba(45,38,64,0.08)}
+.section h3{font-size:15px;margin-bottom:14px;background:linear-gradient(135deg,var(--accent-cyan),var(--accent-pink));-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-weight:700;text-transform:uppercase;letter-spacing:0.4px}
+.metric-row{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid rgba(45,40,80,0.6);font-size:15px}
+.metric-row:last-child{border-bottom:none}
+.metric-label{color:var(--text-secondary)}
+.metric-note{color:var(--text-muted);font-style:italic;font-size:13px}
+.moat-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.moat-tag{padding:5px 13px;border-radius:20px;font-size:14px;font-weight:500;background:linear-gradient(135deg,rgba(77,217,246,0.1),rgba(255,107,157,0.1));color:var(--accent-cyan);border:1px solid rgba(77,217,246,0.2)}
+.refresh-btn{background:var(--bg-card);border:1px solid var(--border);color:var(--text-secondary);padding:6px 16px;border-radius:var(--radius-sm);cursor:pointer;font-size:14px;font-weight:500;transition:all 0.2s cubic-bezier(0.34,1.56,0.64,1)}
+.refresh-btn:hover{background:var(--bg-card-hover);color:var(--accent-cyan);border-color:var(--accent-cyan);transform:translateY(-1px) scale(1.03)}
+.refresh-btn.refreshing{color:var(--accent-cyan);animation:spin 0.8s linear infinite}
+
+/* dashboard row */
+.dashboard-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;padding:14px 14px 0}
+.dash-col{background:var(--bg-card);border-radius:var(--radius-md);padding:14px;border:1px solid var(--border);transition:all 0.2s cubic-bezier(0.34,1.56,0.64,1)}
+.dash-col:hover{transform:translateY(-3px);box-shadow:0 12px 35px rgba(45,38,64,0.1);border-color:var(--border-light)}
+.dash-title{font-size:13px;color:var(--text-secondary);margin-bottom:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px}
+.dash-item{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(45,40,80,0.5);font-size:14px;cursor:pointer;color:var(--text-primary);transition:all 0.15s cubic-bezier(0.34,1.56,0.64,1)}
 .dash-item:last-child{border-bottom:none}
-.dash-item:hover{color:#58a6ff}
+.dash-item:hover{color:var(--accent-cyan);padding-left:8px;transform:scale(1.02)}
 .dash-rank{display:flex;align-items:center;gap:8px}
-.rank-num{width:18px;height:18px;border-radius:50%;background:#1f6feb;color:#fff;font-size:10px;display:flex;align-items:center;justify-content:center}
-.portfolio-panel,.signals-panel,.data-panel{background:#0d1117;min-height:100%;padding:20px}
-.watchlist-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
-.watchlist-stat{background:#161b22;border-radius:8px;padding:14px;text-align:center}
-.watchlist-stat-num{font-size:24px;font-weight:700;color:#e6edf3}
-.watchlist-stat-label{font-size:11px;color:#8b949e;margin-top:4px}
+.rank-num{width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,var(--accent-pink-glow),var(--accent-cyan-glow));color:var(--accent-cyan);font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;transition:all 0.2s}
+.dash-item:hover .rank-num{transform:scale(1.2);background:linear-gradient(135deg,var(--accent-pink),var(--accent-cyan));color:#fff}
+.portfolio-panel,.signals-panel,.data-panel{background:var(--bg-primary);min-height:100%;padding:24px}
+
+/* watchlist stats */
+.watchlist-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;margin-top:12px}
+.watchlist-stat{background:var(--bg-card);border-radius:var(--radius-md);padding:14px;text-align:center;border:1px solid var(--border);position:relative;overflow:hidden;transition:all 0.2s cubic-bezier(0.34,1.56,0.64,1)}
+.watchlist-stat:hover{transform:translateY(-3px);box-shadow:0 8px 25px rgba(45,38,64,0.08)}
+.watchlist-stat:nth-child(1)::before{content:'';position:absolute;top:0;left:20%;right:20%;height:3px;background:linear-gradient(90deg,var(--accent-cyan),var(--accent-pink));border-radius:0 0 3px 3px}
+.watchlist-stat:nth-child(2)::before{content:'';position:absolute;top:0;left:20%;right:20%;height:3px;background:linear-gradient(90deg,var(--accent-purple),var(--accent-pink));border-radius:0 0 3px 3px}
+.watchlist-stat:nth-child(3)::before{content:'';position:absolute;top:0;left:20%;right:20%;height:3px;background:linear-gradient(90deg,var(--accent-green),var(--accent-cyan));border-radius:0 0 3px 3px}
+.watchlist-stat:nth-child(4)::before{content:'';position:absolute;top:0;left:20%;right:20%;height:3px;background:linear-gradient(90deg,var(--accent-orange),var(--accent-red));border-radius:0 0 3px 3px}
+.watchlist-stat-num{font-size:28px;font-weight:800;color:var(--text-primary);line-height:1.2}
+.watchlist-stat:nth-child(1) .watchlist-stat-num{color:var(--accent-cyan)}
+.watchlist-stat:nth-child(2) .watchlist-stat-num{color:var(--accent-purple)}
+.watchlist-stat:nth-child(3) .watchlist-stat-num{color:var(--accent-green)}
+.watchlist-stat:nth-child(4) .watchlist-stat-num{color:var(--accent-red)}
+.watchlist-stat-label{font-size:13px;color:var(--text-secondary);margin-top:4px;font-weight:500;text-transform:uppercase;letter-spacing:0.4px}
+
+/* progress bar */
+.progress-bar-wrap{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--bg-card);border-radius:var(--radius-md);margin-bottom:12px;border:1px solid var(--border);box-shadow:0 2px 8px rgba(45,38,64,0.04)}
+.progress-bar-inner{flex:1;height:6px;background:var(--border);border-radius:3px;overflow:hidden;position:relative}
+.progress-bar-inner::before{content:'';position:absolute;left:0;top:0;height:100%;width:40%;background:linear-gradient(90deg,var(--accent-pink),var(--accent-cyan),var(--accent-purple));border-radius:3px;animation:progress-slide 1s ease-in-out infinite;background-size:200% 100%}
+@keyframes progress-slide{0%{left:-40%}100%{left:110%}}
+.progress-text{font-size:14px;background:linear-gradient(135deg,var(--accent-pink),var(--accent-cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-weight:600;white-space:nowrap}
+
+/* watchlist cards */
 .watchlist-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px}
-.watchlist-card{background:#161b22;border-radius:8px;padding:14px;cursor:pointer;border:1px solid transparent;transition:all 0.2s}
-.watchlist-card:hover,.watchlist-card.selected{background:#1c2128;border-color:#58a6ff}
-.wl-card-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
-.wl-name{font-weight:600;font-size:13px;margin-bottom:3px}
-.wl-meta{font-size:11px;color:#8b949e}
-.wl-star{font-size:16px;cursor:pointer;color:#8b949e;transition:color 0.2s}
-.wl-star.active,.wl-star:hover{color:#f0b429}
-.wl-star-inline{font-size:14px;cursor:pointer;color:#8b949e;margin:0 4px;transition:color 0.2s}
-.wl-star-inline.active{color:#f0b429}
-.wl-star-inline:hover{color:#f0b429}
-.wl-price{font-size:20px;font-weight:700;margin-bottom:8px}
-.wl-footer{display:flex;justify-content:space-between;align-items:center}
-.wl-roic{font-size:11px;color:#8b949e;margin-top:4px}
-.wl-discount{font-size:11px;font-weight:600}
-.modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;display:flex;align-items:center;justify-content:center}
-.modal-box{background:#161b22;border:1px solid #30363d;border-radius:12px;width:380px;max-height:480px;overflow:hidden;display:flex;flex-direction:column}
-.modal-header{padding:16px 20px;border-bottom:1px solid #30363d;display:flex;justify-content:space-between;align-items:center;font-weight:600;font-size:15px}
-.modal-close{font-size:20px;cursor:pointer;color:#8b949e;line-height:1}
-.modal-close:hover{color:#e6edf3}
-.modal-search{padding:12px 16px;border-bottom:1px solid #21262d}
-.modal-input{width:100%;background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:8px 12px;color:#e6edf3;font-size:13px;outline:none}
-.modal-input:focus{border-color:#58a6ff}
-.modal-input::placeholder{color:#484f58}
+.watchlist-card{background:var(--bg-card);border-radius:var(--radius-lg);padding:16px;cursor:pointer;border:1px solid var(--border);transition:all 0.25s cubic-bezier(0.34,1.56,0.64,1);position:relative}
+.watchlist-card:hover,.watchlist-card.selected{background:var(--bg-card-hover);border-color:var(--accent-pink);transform:translateY(-6px) scale(1.02);box-shadow:0 16px 40px rgba(255,77,133,0.12)}
+.wl-badge{position:absolute;top:12px;right:12px;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700}
+.wl-card-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
+.wl-name{font-weight:600;font-size:15px;margin-bottom:2px}
+.wl-meta{font-size:14px;color:var(--text-secondary)}
+.wl-star{font-size:18px;cursor:pointer;color:var(--text-muted);transition:all 0.2s cubic-bezier(0.34,1.56,0.64,1)}
+.wl-star.active,.wl-star:hover{color:var(--accent-yellow);text-shadow:0 0 12px rgba(255,217,61,0.4);transform:scale(1.2) rotate(18deg)}
+.wl-star-inline{font-size:14px;cursor:pointer;color:var(--text-muted);margin:0 4px;transition:all 0.2s}
+.wl-star-inline.active{color:var(--accent-yellow)}
+.wl-star-inline:hover{color:var(--accent-yellow);transform:scale(1.15)}
+.wl-price{font-size:22px;font-weight:700;margin-bottom:10px;letter-spacing:-0.3px}
+.wl-footer{display:flex;justify-content:space-between;align-items:center;gap:6px}
+.wl-roic{font-size:14px;color:var(--text-muted)}
+.wl-discount{font-size:14px;font-weight:600}
+
+/* portfolio */
+.portfolio-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.portfolio-stat{background:var(--bg-card);border-radius:var(--radius-lg);padding:18px;border:1px solid var(--border);position:relative;overflow:hidden;transition:all 0.2s cubic-bezier(0.34,1.56,0.64,1)}
+.portfolio-stat:hover{transform:translateY(-4px);box-shadow:0 12px 35px rgba(45,38,64,0.1)}
+.portfolio-stat::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.portfolio-stat:nth-child(1)::before{background:linear-gradient(90deg,var(--accent-cyan),var(--accent-pink))}
+.portfolio-stat:nth-child(2)::before{background:linear-gradient(90deg,var(--accent-purple),var(--accent-pink))}
+.portfolio-stat:nth-child(3)::before{background:linear-gradient(90deg,var(--accent-green),var(--accent-cyan))}
+.portfolio-stat:nth-child(4)::before{background:linear-gradient(90deg,var(--accent-yellow),var(--accent-orange))}
+.portfolio-stat-label{font-size:13px;color:var(--text-secondary);font-weight:500;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px}
+.portfolio-stat-value{font-size:28px;font-weight:800;line-height:1.1}
+.portfolio-stat-sub{font-size:14px;color:var(--text-muted);margin-top:4px}
+.portfolio-table{width:100%;border-collapse:collapse}
+.portfolio-table th{padding:12px 14px;text-align:left;font-size:14px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;border-bottom:1px solid var(--border)}
+.portfolio-table td{padding:14px 14px;font-size:15px;border-bottom:1px solid rgba(45,40,80,0.5)}
+.portfolio-table tr:hover td{background:var(--bg-card-hover)}
+.portfolio-table .num{text-align:right;font-variant-numeric:tabular-nums}
+.portfolio-gain{color:var(--accent-green);font-weight:600}
+.portfolio-loss{color:var(--accent-red);font-weight:600}
+.portfolio-name{font-weight:600}
+.portfolio-ticker{font-size:14px;color:var(--text-muted)}
+.portfolio-add-btn{display:flex;align-items:center;gap:6px;padding:10px 22px;background:linear-gradient(135deg,var(--accent-pink),var(--accent-purple));color:#fff;border:none;border-radius:var(--radius-sm);font-size:15px;font-weight:600;cursor:pointer;transition:all 0.2s cubic-bezier(0.34,1.56,0.64,1);box-shadow:0 4px 15px rgba(255,77,133,0.15)}
+.portfolio-add-btn:hover{transform:translateY(-2px) scale(1.03);box-shadow:0 8px 25px rgba(255,77,133,0.25)}
+.portfolio-toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.portfolio-title{font-size:20px;font-weight:700;background:linear-gradient(135deg,var(--accent-pink),var(--accent-cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.portfolio-empty{text-align:center;padding:60px 20px;color:var(--text-muted)}
+.portfolio-empty-icon{font-size:48px;opacity:0.3;margin-bottom:16px}
+.portfolio-empty-title{font-size:18px;font-weight:600;color:var(--text-secondary);margin-bottom:8px}
+.portfolio-empty-hint{font-size:15px}
+.portfolio-del{color:var(--text-muted);cursor:pointer;font-size:14px;opacity:0;transition:opacity 0.15s;padding:4px 8px;border-radius:4px}
+.portfolio-table tr:hover .portfolio-del{opacity:1}
+.portfolio-del:hover{color:var(--accent-red);background:rgba(255,107,107,0.15);transform:scale(1.05)}
+.portfolio-input-wrap{display:flex;flex-direction:column;gap:8px;padding:16px 20px;border-top:1px solid var(--border)}
+.portfolio-input-label{font-size:14px;color:var(--text-secondary);font-weight:500}
+.portfolio-input-row{display:flex;gap:8px}
+.portfolio-input{background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px;color:var(--text-primary);font-size:15px;outline:none;flex:1;transition:border-color 0.15s}
+.portfolio-input:focus{border-color:var(--accent-cyan);box-shadow:0 0 0 3px rgba(77,217,246,0.1)}
+.portfolio-ok-btn{padding:10px 22px;background:linear-gradient(135deg,var(--accent-pink),var(--accent-purple));color:#fff;border:none;border-radius:var(--radius-sm);font-size:15px;font-weight:600;cursor:pointer;transition:all 0.2s cubic-bezier(0.34,1.56,0.64,1)}
+.portfolio-ok-btn:not([disabled]):hover{transform:scale(1.05);box-shadow:0 4px 15px rgba(255,77,133,0.2)}
+.portfolio-cancel-btn{padding:10px 18px;background:var(--bg-card);color:var(--text-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:15px;cursor:pointer;transition:all 0.15s}
+.portfolio-cancel-btn:hover{background:var(--bg-card-hover);color:var(--text-primary)}
+
+/* search modal */
+.modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(45,38,64,0.5);backdrop-filter:blur(6px);z-index:1000;display:flex;align-items:center;justify-content:center}
+.modal-box{background:var(--bg-card);border:1px solid var(--border-light);border-radius:var(--radius-lg);width:420px;max-height:520px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 24px 48px rgba(45,38,64,0.15);animation:modal-pop 0.25s cubic-bezier(0.34,1.56,0.64,1)}
+@keyframes modal-pop{0%{opacity:0;transform:scale(0.85) translateY(20px)}100%{opacity:1;transform:scale(1) translateY(0)}}
+.modal-header{padding:18px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-weight:600;font-size:17px}
+.modal-close{font-size:24px;cursor:pointer;color:var(--text-muted);line-height:1;transition:all 0.15s}
+.modal-close:hover{color:var(--accent-pink);transform:rotate(90deg)}
+.modal-search{padding:14px 20px;border-bottom:1px solid var(--border)}
+.modal-input{width:100%;background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px;color:var(--text-primary);font-size:15px;outline:none;transition:all 0.15s}
+.modal-input:focus{border-color:var(--accent-cyan);box-shadow:0 0 0 3px rgba(77,217,246,0.1)}
+.modal-input::placeholder{color:var(--text-muted)}
 .modal-results{max-height:320px;overflow-y:auto}
-.modal-result-item{padding:10px 16px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;font-size:13px;border-bottom:1px solid #21262d}
-.modal-result-item:hover{background:#21262d}
+.modal-result-item{padding:14px 20px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;font-size:15px;border-bottom:1px solid rgba(45,40,80,0.5);transition:all 0.12s}
+.modal-result-item:hover{background:var(--bg-card);padding-left:24px}
 .modal-result-name{font-weight:500}
-.modal-result-ticker{color:#8b949e;font-size:12px}
-.modal-no-result{padding:20px;text-align:center;color:#8b949e;font-size:13px}
+.modal-result-ticker{color:var(--text-muted);font-size:14px}
+.modal-no-result{padding:24px;text-align:center;color:var(--text-muted);font-size:15px}
 .watchlist-toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
-.watchlist-title{font-size:16px;font-weight:600}
-.btn-add{background:#1f6feb;color:#fff;border:none;border-radius:6px;padding:7px 14px;font-size:13px;cursor:pointer;transition:background 0.2s}
-.btn-add:hover{background:#388bfd}
+.watchlist-title{font-size:19px;font-weight:700;background:linear-gradient(135deg,var(--accent-cyan),var(--accent-pink));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.btn-add{background:linear-gradient(135deg,var(--accent-pink),var(--accent-purple));color:#fff;border:none;border-radius:var(--radius-sm);padding:10px 18px;font-size:15px;font-weight:600;cursor:pointer;transition:all 0.2s cubic-bezier(0.34,1.56,0.64,1);box-shadow:0 4px 12px rgba(255,77,133,0.15)}
+.btn-add:hover{transform:translateY(-2px) scale(1.03);box-shadow:0 8px 20px rgba(255,77,133,0.25)}
+
+/* empty */
+.wl-empty{padding:48px 20px;text-align:center}
+.wl-empty-icon{font-size:48px;color:var(--border-light);margin-bottom:14px;line-height:1}
+.wl-empty-text{font-size:17px;font-weight:600;color:var(--text-secondary);margin-bottom:6px}
+.wl-empty-hint{font-size:14px;color:var(--text-muted)}
+
+/* modal market tabs */
+.modal-market-tabs{display:flex;gap:8px;padding:12px 20px;border-bottom:1px solid var(--border)}
+.market-tab{padding:6px 16px;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;background:var(--bg-card);color:var(--text-secondary);border:1px solid var(--border);transition:all 0.2s cubic-bezier(0.34,1.56,0.64,1)}
+.market-tab:hover{border-color:var(--accent-cyan);color:var(--accent-cyan);transform:translateY(-1px)}
+.market-tab.active{background:linear-gradient(135deg,var(--accent-pink),var(--accent-purple));color:#fff;border-color:transparent;box-shadow:0 4px 12px rgba(255,77,133,0.15)}
+
+/* chart */
+.chart-container{background:var(--bg-card);border-radius:var(--radius-md);padding:18px;margin-bottom:16px;border:1px solid var(--border);box-shadow:0 2px 8px rgba(45,38,64,0.04)}
+
+/* keyframes */
+@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+@keyframes wiggle{0%,100%{transform:rotate(0deg)}25%{transform:rotate(-8deg)}75%{transform:rotate(8deg)}}
+@keyframes rainbow-slide{0%{background-position:0% 50%}100%{background-position:200% 50%}}
 </style>
 </head>
 <body>
 <div id="root"></div>
 <script type="text/babel">
 const { useState } = React;
-
-const MOCK = {
-  "600519.SH": {
-    name: "贵州茅台", market: "CN", sector: "白酒", close: 1856,
-    pe_ratio: 35.2, roic: 0.342, score_overall: 92, score_moat: 88,
-    dcf_value: 1980,
-    metrics: { pb: 12.8, gross_margin: 0.918, net_margin: 0.502, revenue_growth: 0.175 },
-    moat_tags: ["无形资产（品牌）", "定价权", "网络效应", "低成本优势", "转换成本"],
-    ai_report: "贵州茅台拥有极强的品牌护城河，在中国高端白酒市场占据绝对主导地位。ROIC 持续保持 30%+，展现出卓越的资本配置能力。"
-  },
-  "AAPL": {
-    name: "苹果", market: "US", sector: "科技", close: 218,
-    pe_ratio: 28.1, roic: 0.28, score_overall: 88, score_moat: 82,
-    dcf_value: 245,
-    metrics: { pb: 45.2, gross_margin: 0.462, net_margin: 0.262, revenue_growth: 0.08 },
-    moat_tags: ["品牌壁垒", "生态锁定", "研发投入", "供应链优势"],
-    ai_report: "苹果拥有强大的生态系统和品牌忠诚度，ROIC 高达 28%，资本配置极为高效。"
-  },
-  "00700.HK": {
-    name: "腾讯控股", market: "HK", sector: "互联网", close: 428,
-    pe_ratio: 22.5, roic: 0.22, score_overall: 85, score_moat: 80,
-    dcf_value: 450,
-    metrics: { pb: 3.8, gross_margin: 0.52, net_margin: 0.28, revenue_growth: 0.10 },
-    moat_tags: ["网络效应", "生态锁定", "高利润率"],
-    ai_report: "腾讯拥有中国最大的社交网络，网络效应极强，多元化业务提供稳定现金流。"
-  },
-  "KO": {
-    name: "可口可乐", market: "US", sector: "消费", close: 62,
-    pe_ratio: 24.8, roic: 0.15, score_overall: 71, score_moat: 70,
-    dcf_value: 65,
-    metrics: { pb: 7.2, gross_margin: 0.40, net_margin: 0.22, revenue_growth: 0.03 },
-    moat_tags: ["全球品牌", "规模经济", "渠道优势", "定价权"],
-    ai_report: "典型的巴菲特式好生意，全球分销网络和稳定现金流。"
-  },
-  "601318.SH": {
-    name: "中国平安", market: "CN", sector: "金融保险", close: 48.5,
-    pe_ratio: 8.2, roic: 0.12, score_overall: 65, score_moat: 55,
-    dcf_value: 52,
-    metrics: { pb: 1.2, gross_margin: 0.28, net_margin: 0.10, revenue_growth: 0.04 },
-    moat_tags: ["牌照优势", "客户基础", "综合金融"],
-    ai_report: "国内领先的综合金融集团，但 ROIC 12% 显示资本效率一般。"
-  },
-  "000858.SZ": {
-    name: "五粮液", market: "CN", sector: "白酒", close: 168,
-    pe_ratio: 22.1, roic: 0.28, score_overall: 83, score_moat: 75,
-    dcf_value: 175,
-    metrics: { pb: 8.5, gross_margin: 0.75, net_margin: 0.35, revenue_growth: 0.12 },
-    moat_tags: ["品牌壁垒", "定价权", "规模经济"],
-    ai_report: "中国第二大高端白酒品牌，品牌护城河深厚，ROIC 28% 体现出优秀资本效率。"
-  },
-  "BRK.B": {
-    name: "伯克希尔哈撒韦", market: "US", sector: "综合", close: 398,
-    pe_ratio: 21.3, roic: 0.18, score_overall: 82, score_moat: 85,
-    dcf_value: 420,
-    metrics: { pb: 1.5, gross_margin: 0.32, net_margin: 0.20, revenue_growth: 0.06 },
-    moat_tags: ["低成本优势", "资本配置", "稳健经营"],
-    ai_report: "巴菲特自家公司，资本配置能力极强，运营现金流稳定，长期复合增长典范。"
-  },
-  "JNJ": {
-    name: "强生", market: "US", sector: "医疗健康", close: 158,
-    pe_ratio: 24.5, roic: 0.22, score_overall: 80, score_moat: 78,
-    dcf_value: 165,
-    metrics: { pb: 6.8, gross_margin: 0.68, net_margin: 0.18, revenue_growth: 0.05 },
-    moat_tags: ["研发壁垒", "品牌信任", "规模经济"],
-    ai_report: "全球最大医疗健康集团之一，品牌信任度和销售渠道无可比拟，ROE 22% 稳健。"
-  },
-  "600036.SH": {
-    name: "招商银行", market: "CN", sector: "银行", close: 38.2,
-    pe_ratio: 7.1, roic: 0.16, score_overall: 72, score_moat: 60,
-    dcf_value: 40,
-    metrics: { pb: 1.1, gross_margin: 0.35, net_margin: 0.28, revenue_growth: 0.07 },
-    moat_tags: ["零售客户优势", "风险管理", "网络效应"],
-    ai_report: "中国最好的零售银行之一，ROIC 16% 在银行业属优秀水平。"
-  },
-  "600900.SH": {
-    name: "长江电力", market: "CN", sector: "公用事业", close: 28.5,
-    pe_ratio: 18.2, roic: 0.11, score_overall: 62, score_moat: 58,
-    dcf_value: 30,
-    metrics: { pb: 2.1, gross_margin: 0.55, net_margin: 0.35, revenue_growth: 0.02 },
-    moat_tags: ["水资源垄断", "稳定现金流", "电价锁定"],
-    ai_report: "国内最大的水电上市公司，现金流稳定但成长性有限，适合防御性配置。"
-  },
-  "600276.SH": {
-    name: "恒瑞医药", market: "CN", sector: "医药", close: 62.8,
-    pe_ratio: 42.1, roic: 0.18, score_overall: 68, score_moat: 65,
-    dcf_value: 58,
-    metrics: { pb: 8.5, gross_margin: 0.82, net_margin: 0.18, revenue_growth: 0.15 },
-    moat_tags: ["研发壁垒", "创新药管线", "品牌信任"],
-    ai_report: "中国创新药龙头，ROIC 18% 显示良好的资本效率，但 PE 偏高。"
-  },
-  "002594.SZ": {
-    name: "比亚迪", market: "CN", sector: "汽车", close: 268,
-    pe_ratio: 32.5, roic: 0.14, score_overall: 60, score_moat: 50,
-    dcf_value: 240,
-    metrics: { pb: 5.8, gross_margin: 0.20, net_margin: 0.04, revenue_growth: 0.25 },
-    moat_tags: ["成本优势", "新能源技术", "垂直整合"],
-    ai_report: "中国新能源汽车领导者，但竞争激烈 ROIC 仅 14%，需观察护城河持续性。"
-  },
-  "600028.SH": {
-    name: "中国石化", market: "CN", sector: "能源", close: 6.2,
-    pe_ratio: 9.5, roic: 0.08, score_overall: 52, score_moat: 45,
-    dcf_value: 7,
-    metrics: { pb: 0.8, gross_margin: 0.16, net_margin: 0.02, revenue_growth: 0.03 },
-    moat_tags: ["规模优势", "渠道网络", "政策保护"],
-    ai_report: "上下游一体化能源巨头，ROIC 仅 8%，估值便宜但成长性有限。"
-  },
-  "MSFT": {
-    name: "微软", market: "US", sector: "科技", close: 378,
-    pe_ratio: 32.1, roic: 0.24, score_overall: 87, score_moat: 88,
-    dcf_value: 395,
-    metrics: { pb: 12.5, gross_margin: 0.70, net_margin: 0.35, revenue_growth: 0.12 },
-    moat_tags: ["操作系统锁定", "云计算垄断", "企业级生态", "研发壁垒"],
-    ai_report: "全球企业软件和云服务龙头，Azure 护城河极深，ROIC 24% 展现出卓越的资本效率。"
-  },
-  "JPM": {
-    name: "摩根大通", market: "US", sector: "金融", close: 168,
-    pe_ratio: 11.2, roic: 0.16, score_overall: 75, score_moat: 68,
-    dcf_value: 180,
-    metrics: { pb: 1.6, gross_margin: 0.45, net_margin: 0.30, revenue_growth: 0.08 },
-    moat_tags: ["全球品牌", "风险管理", "规模经济", "多元化业务"],
-    ai_report: "全球最大银行之一，资本效率稳健，Jamie Dimon 领导力强，ROIC 16%。"
-  },
-  "WMT": {
-    name: "沃尔玛", market: "US", sector: "零售", close: 62,
-    pe_ratio: 28.5, roic: 0.18, score_overall: 73, score_moat: 70,
-    dcf_value: 68,
-    metrics: { pb: 6.2, gross_margin: 0.25, net_margin: 0.03, revenue_growth: 0.05 },
-    moat_tags: ["规模优势", "供应链效率", "地理覆盖", "天天低价"],
-    ai_report: "全球最大零售商，供应链管理极致，ROIC 18% 在零售业属优秀水平。"
-  },
-  "NKE": {
-    name: "耐克", market: "US", sector: "消费", close: 98,
-    pe_ratio: 28.5, roic: 0.20, score_overall: 74, score_moat: 72,
-    dcf_value: 108,
-    metrics: { pb: 10.5, gross_margin: 0.44, net_margin: 0.10, revenue_growth: 0.06 },
-    moat_tags: ["品牌壁垒", "创新研发", "DTC渠道", "全球分销"],
-    ai_report: "全球运动品牌龙头，品牌护城河深厚，ROIC 20% 显示高效的资本配置。"
-  }
-};
-
-const STOCKS = Object.entries(MOCK).map(function(entry) {
-  var ticker = entry[0];
-  var d = entry[1];
-  return {
-    ticker: ticker,
-    name: d.name,
-    market: d.market,
-    sector: d.sector,
-    close: d.close,
-    pe_ratio: d.pe_ratio,
-    roic: d.roic,
-    score_overall: d.score_overall,
-    score_moat: d.score_moat,
-    dcf_value: d.dcf_value,
-    metrics: d.metrics,
-    moat_tags: d.moat_tags,
-    ai_report: d.ai_report,
-    discount: d.dcf_value > d.close ? ((d.dcf_value - d.close) / d.dcf_value * 100).toFixed(1) : 0
-  };
-});
 
 function scoreColor(s) {
   if (s >= 80) return "score-a";
@@ -359,28 +337,6 @@ function StockList(props) {
 }
 
 
-function generateHistory(ticker, currentPrice) {
-  var days = 90;
-  var data = [];
-  var price = currentPrice * 0.85;
-  var now = new Date();
-  for (var i = days; i >= 0; i--) {
-    var d = new Date(now);
-    d.setDate(d.getDate() - i);
-    var change = (Math.random() - 0.48) * 0.04;
-    price = price * (1 + change);
-    var open = price * (1 + (Math.random() - 0.5) * 0.02);
-    var high = Math.max(open, price) * (1 + Math.random() * 0.015);
-    var low = Math.min(open, price) * (1 - Math.random() * 0.015);
-    var close = price;
-    data.push({ time: d.toISOString().slice(0,10), open: open, high: high, low: low, close: close });
-  }
-  // Snap last candle to current price
-  if (data.length > 0) { data[data.length-1].close = currentPrice; }
-  return data;
-}
-
-
 function KLineChart(props) {
   var containerRef = React.useRef(null);
   var chartRef = React.useRef(null);
@@ -391,23 +347,44 @@ function KLineChart(props) {
     if (chartRef.current) { chartRef.current.remove(); chartRef.current = null; }
     var chart = LightweightCharts.createChart(containerRef.current, {
       width: containerRef.current.clientWidth,
-      height: 220,
-      layout: { background: { color: "#161b22" }, textColor: "#8b949e" },
-      grid: { vertLines: { color: "#21262d" }, horzLines: { color: "#21262d" } },
+      height: 320,
+      layout: { background: { color: "#151d27" }, textColor: "#8b9bb5" },
+      grid: { vertLines: { color: "#1e2a3a" }, horzLines: { color: "#1e2a3a" } },
       crosshair: { mode: 1 },
-      rightPriceScale: { borderColor: "#30363d" },
-      timeScale: { borderColor: "#30363d", timeVisible: true }
+      rightPriceScale: { borderColor: "#2a3a50" },
+      timeScale: { borderColor: "#2a3a50", timeVisible: true, rightOffset: 5 }
     });
     chartRef.current = chart;
     var series = chart.addCandlestickSeries({
-      upColor: "#3fb950", downColor: "#f85149",
-      borderUpColor: "#3fb950", borderDownColor: "#f85149",
-      wickUpColor: "#3fb950", wickDownColor: "#f85149"
+      upColor: "#22c55e", downColor: "#ef4444",
+      borderUpColor: "#22c55e", borderDownColor: "#ef4444",
+      wickUpColor: "#22c55e", wickDownColor: "#ef4444"
     });
     seriesRef.current = series;
-    var history = generateHistory(props.ticker, props.price);
-    series.setData(history);
-    chart.timeScale().fitContent();
+
+    function loadData() {
+      if (!chartRef.current || !seriesRef.current) return;
+      return fetch("/api/stock/" + encodeURIComponent(props.ticker) + "/history")
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          if (!chartRef.current || !seriesRef.current) return;
+          if (data.history && data.history.length > 1) {
+            var candles = data.history.map(function(d) {
+              var parts = d.date.split("-");
+              var ts = Date.UTC(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+              ts = Math.floor(ts / 1000);
+              return { time: ts, open: d.open, high: d.high, low: d.low, close: d.close };
+            });
+            seriesRef.current.setData(candles);
+            chartRef.current.timeScale().fitContent();
+          }
+        })
+        .catch(function(e) { console.error("chart load error", e); });
+    }
+
+    loadData();
+    var interval = setInterval(loadData, 60000);
+
     var ro = new ResizeObserver(function() {
       if (containerRef.current && chartRef.current) {
         chartRef.current.applyOptions({ width: containerRef.current.clientWidth });
@@ -415,14 +392,15 @@ function KLineChart(props) {
     });
     ro.observe(containerRef.current);
     return function() {
+      clearInterval(interval);
       ro.disconnect();
       if (chartRef.current) { chartRef.current.remove(); chartRef.current = null; }
     };
   }, [props.ticker, props.price]);
 
   return React.createElement("div", { className: "section" },
-    React.createElement("h3", { style: { fontSize: "14px", marginBottom: "12px", color: "#58a6ff" } }, "K 线（近 90 日）"),
-    React.createElement("div", { ref: containerRef, style: { width: "100%", height: "220px", borderRadius: "6px", overflow: "hidden" } })
+    React.createElement("h3", { style: { fontSize: "14px", marginBottom: "12px", color: "#58a6ff" } }, "K 线（全时段 · 实时更新）"),
+    React.createElement("div", { ref: containerRef, style: { width: "100%", height: "320px", borderRadius: "6px", overflow: "hidden" } })
   );
 }
 
@@ -446,18 +424,18 @@ function StockDetail(props) {
       ),
       React.createElement("div", { className: "score-card" },
         React.createElement("h4", null, "DCF 估值"),
-        React.createElement("div", { className: "score-big", style: { color: parseFloat(stock.discount) > 0 ? "#f85149" : "#3fb950" } }, stock.dcf_value),
-        React.createElement("div", { className: "score-label" }, prefix + stock.close + " · " + (parseFloat(stock.discount) > 0 ? "低估 " + stock.discount + "%" : "合理"))
+        React.createElement("div", { className: "score-big", style: { color: "#8b949e" } }, stock.metric_notes && stock.metric_notes.dcf_value ? stock.metric_notes.dcf_value : stock.dcf_value),
+        React.createElement("div", { className: "score-label" }, prefix + stock.close + (stock.dcf_value > 0 ? " · " + (parseFloat(stock.discount) > 0 ? "低估 " + stock.discount + "%" : "合理") : ""))
       )
     ),
     React.createElement("div", { className: "section" },
       React.createElement("h3", null, "关键指标"),
-      React.createElement("div", { className: "metric-row" }, React.createElement("span", { className: "metric-label" }, "ROIC"), React.createElement("span", null, (stock.roic * 100).toFixed(1) + "%")),
-      React.createElement("div", { className: "metric-row" }, React.createElement("span", { className: "metric-label" }, "PE"), React.createElement("span", null, stock.pe_ratio)),
-      React.createElement("div", { className: "metric-row" }, React.createElement("span", { className: "metric-label" }, "PB"), React.createElement("span", null, m.pb)),
-      React.createElement("div", { className: "metric-row" }, React.createElement("span", { className: "metric-label" }, "毛利率"), React.createElement("span", null, (m.gross_margin * 100).toFixed(1) + "%")),
-      React.createElement("div", { className: "metric-row" }, React.createElement("span", { className: "metric-label" }, "净利率"), React.createElement("span", null, (m.net_margin * 100).toFixed(1) + "%")),
-      React.createElement("div", { className: "metric-row" }, React.createElement("span", { className: "metric-label" }, "营收增长"), React.createElement("span", null, (m.revenue_growth * 100).toFixed(1) + "%"))
+      React.createElement("div", { className: "metric-row" }, React.createElement("span", { className: "metric-label" }, "ROIC"), React.createElement("span", { className: stock.metric_notes && stock.metric_notes.roic ? "metric-note" : "" }, stock.metric_notes && stock.metric_notes.roic ? stock.metric_notes.roic : (stock.roic * 100).toFixed(1) + "%")),
+      React.createElement("div", { className: "metric-row" }, React.createElement("span", { className: "metric-label" }, "PE"), React.createElement("span", { className: stock.metric_notes && stock.metric_notes.pe_ratio ? "metric-note" : "" }, stock.metric_notes && stock.metric_notes.pe_ratio ? stock.metric_notes.pe_ratio : stock.pe_ratio)),
+      React.createElement("div", { className: "metric-row" }, React.createElement("span", { className: "metric-label" }, "PB"), React.createElement("span", { className: stock.metric_notes && stock.metric_notes.pb_ratio ? "metric-note" : "" }, stock.metric_notes && stock.metric_notes.pb_ratio ? stock.metric_notes.pb_ratio : m.pb)),
+      React.createElement("div", { className: "metric-row" }, React.createElement("span", { className: "metric-label" }, "毛利率"), React.createElement("span", { className: stock.metric_notes && stock.metric_notes.gross_margin ? "metric-note" : "" }, stock.metric_notes && stock.metric_notes.gross_margin ? stock.metric_notes.gross_margin : (m.gross_margin * 100).toFixed(1) + "%")),
+      React.createElement("div", { className: "metric-row" }, React.createElement("span", { className: "metric-label" }, "净利率"), React.createElement("span", { className: stock.metric_notes && stock.metric_notes.net_margin ? "metric-note" : "" }, stock.metric_notes && stock.metric_notes.net_margin ? stock.metric_notes.net_margin : (m.net_margin * 100).toFixed(1) + "%")),
+      React.createElement("div", { className: "metric-row" }, React.createElement("span", { className: "metric-label" }, "营收增长"), React.createElement("span", { className: stock.metric_notes && stock.metric_notes.revenue_growth ? "metric-note" : "" }, stock.metric_notes && stock.metric_notes.revenue_growth ? stock.metric_notes.revenue_growth : (m.revenue_growth * 100).toFixed(1) + "%"))
     ),
     React.createElement("div", { className: "section" },
       React.createElement("h3", null, "护城河分析"),
@@ -480,39 +458,73 @@ function WatchlistPanel(props) {
   var selected = props.selected;
   var onSelect = props.onSelect;
   var onToggle = props.onToggle;
+  var addingStock = props.addingStock || "";
 
   var ss = React.useState("");
   var qs = ss[0]; var qset = ss[1];
   var sm = React.useState(false);
   var ms = sm[0]; var mset = sm[1];
+  var sm2 = React.useState("CN");
+  var mkt = sm2[0]; var msetMkt = sm2[1];
+  var sr = React.useState([]);
+  var searchResults = sr[0]; var setSearchResults = sr[1];
+  var sg = React.useState(false);
+  var searching = sg[0]; var setSearching = sg[1];
 
-  var watchlistStocks = stocks.filter(function(s) { return watchlist.indexOf(s.ticker) >= 0; });
+  var watchlistStocks = watchlist.map(function(ticker) {
+    var found = stocks.find(function(s) { return s.ticker === ticker; });
+    if (found) return found;
+    return { ticker: ticker, name: ticker, market: "CN", sector: "",
+             close: 0, pe_ratio: 0, roic: 0, score_overall: 0, score_moat: 0,
+             dcf_value: 0, discount: "0",
+             metrics: { gross_margin: 0, net_margin: 0, revenue_growth: 0, pb: 0 },
+             moat_tags: [], ai_report: "", metric_notes: {} };
+  });
   var totalScore = watchlistStocks.length > 0 ? Math.round(watchlistStocks.reduce(function(sum, s) { return sum + (s.score_overall || 0); }, 0) / watchlistStocks.length) : 0;
-  var q = qs.trim();
-  var searchResults = q.length > 0 ? stocks.filter(function(s) {
-    return s.name.indexOf(q) >= 0 || s.ticker.indexOf(q) >= 0;
-  }) : [];
+
+  React.useEffect(function() {
+    var q = qs.trim();
+    if (q.length < 1) { setSearchResults([]); return; }
+    setSearching(true);
+    var timer = setTimeout(function() {
+      var url = "/api/search?q=" + encodeURIComponent(q) + "&market=" + mkt;
+      fetch(url)
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          setSearchResults((data.results || []).slice(0, 8));
+          setSearching(false);
+        })
+        .catch(function() { setSearchResults([]); setSearching(false); });
+    }, 300);
+    return function() { clearTimeout(timer); };
+  }, [qs, mkt]);
 
   var modalContent = [];
   modalContent.push(React.createElement("div", { className: "modal-header" },
     React.createElement("span", { className: "modal-title" }, "\u6dfb\u52a0\u81ea\u9009\u80a1"),
-    React.createElement("span", { className: "modal-close", onClick: function() { mset(false); qset(""); } }, "\u00d7")
+    React.createElement("span", { className: "modal-close", onClick: function() { mset(false); qset(""); setSearchResults([]); } }, "\u00d7")
   ));
   modalContent.push(React.createElement("div", { className: "modal-search" },
-    React.createElement("input", { type: "text", className: "modal-input", placeholder: "\u641c\u7d22\u80a1\u7968\u540d\u79f0\u6216\u4ee3\u7801...", value: qs, onChange: function(e) { qset(e.target.value); } })
+    React.createElement("input", { ref: function(el) { if (el) setTimeout(function() { el.focus(); }, 50); }, type: "text", className: "modal-input", placeholder: "\u641c\u7d22\u80a1\u7968\u540d\u79f0\u6216\u4ee3\u7801...", value: qs, onChange: function(e) { qset(e.target.value); } })
+  ));
+  modalContent.push(React.createElement("div", { className: "modal-market-tabs" },
+    React.createElement("button", { className: "market-tab" + (mkt === "CN" ? " active" : ""), onClick: function() { msetMkt("CN"); qset(""); setSearchResults([]); } }, "\u4ea4\u80a1"),
+    React.createElement("button", { className: "market-tab" + (mkt === "US" ? " active" : ""), onClick: function() { msetMkt("US"); qset(""); setSearchResults([]); } }, "\u7f8e\u80a1")
   ));
 
   if (searchResults.length > 0) {
     modalContent.push(React.createElement("div", { className: "modal-results" },
-      searchResults.slice(0, 8).map(function(s) {
+      searchResults.map(function(s) {
         var mktLabel = s.market === "CN" ? "\u4ea4\u80a1" : s.market === "HK" ? "\u6e2f\u80a1" : "\u7f8e\u80a1";
-        return React.createElement("div", { key: s.ticker, className: "modal-result-item", onClick: function() { onToggle(s.ticker); qset(""); mset(false); } },
+        return React.createElement("div", { key: s.symbol, className: "modal-result-item", onClick: function() { onToggle(s.symbol); qset(""); mset(false); setSearchResults([]); } },
           React.createElement("span", { className: "modal-result-name" }, s.name),
-          React.createElement("span", { className: "modal-result-ticker" }, s.ticker, " \u00b7 ", mktLabel)
+          React.createElement("span", { className: "modal-result-ticker" }, s.symbol, " \u00b7 ", mktLabel)
         );
       })
     ));
-  } else if (q.length > 0) {
+  } else if (searching) {
+    modalContent.push(React.createElement("div", { className: "modal-no-result" }, "\u641c\u7d22\u4e2d..."));
+  } else if (qs.trim().length > 0) {
     modalContent.push(React.createElement("div", { className: "modal-no-result" }, "\u672a\u627e\u5230\u5339\u914d\u80a1\u7968"));
   } else {
     modalContent.push(React.createElement("div", { style: { padding: "20px", textAlign: "center", color: "#8b949e" } }, "\u8bf7\u8f93\u5165\u80a1\u7968\u540d\u79f0\u6216\u4ee3\u7801\u641c\u7d22"));
@@ -520,7 +532,7 @@ function WatchlistPanel(props) {
 
   var modalEl = null;
   if (ms) {
-    modalEl = React.createElement("div", { className: "modal-overlay", onClick: function() { mset(false); qset(""); } },
+    modalEl = React.createElement("div", { className: "modal-overlay", onClick: function() { mset(false); qset(""); setSearchResults([]); } },
       React.createElement("div", { className: "modal-box", onClick: function(e) { e.stopPropagation(); } }, modalContent)
     );
   }
@@ -531,19 +543,30 @@ function WatchlistPanel(props) {
       React.createElement("span", { className: "watchlist-title" }, "\u81ea\u9009\u80a1"),
       React.createElement("button", { className: "btn-add", onClick: function() { mset(true); } }, React.createElement("span", null, "+ \u6dfb\u52a0\u80a1\u7968"))
     ),
+    addingStock ? React.createElement("div", { className: "progress-bar-wrap" },
+      React.createElement("div", { className: "progress-bar-inner" }),
+      React.createElement("span", { className: "progress-text" }, addingStock)
+    ) : null,
     React.createElement("div", { className: "watchlist-summary" },
       React.createElement("div", { className: "watchlist-stat" }, React.createElement("div", { className: "watchlist-stat-num" }, watchlistStocks.length), React.createElement("div", { className: "watchlist-stat-label" }, "\u81ea\u9009\u6570")),
       React.createElement("div", { className: "watchlist-stat" }, React.createElement("div", { className: "watchlist-stat-num", style: { color: "#58a6ff" } }, totalScore), React.createElement("div", { className: "watchlist-stat-label" }, "\u5e73\u5747\u8bc4\u5206")),
       React.createElement("div", { className: "watchlist-stat" }, React.createElement("div", { className: "watchlist-stat-num", style: { color: "#3fb950" } }, watchlistStocks.filter(function(s) { return s.dcf_value > s.close; }).length), React.createElement("div", { className: "watchlist-stat-label" }, "\u4f4e\u4f30\u673a\u4f1a")),
       React.createElement("div", { className: "watchlist-stat" }, React.createElement("div", { className: "watchlist-stat-num", style: { color: "#f85149" } }, watchlistStocks.filter(function(s) { return s.dcf_value < s.close; }).length), React.createElement("div", { className: "watchlist-stat-label" }, "\u9ad8\u4f30\u63d0\u9192"))
     ),
-    watchlistStocks.length === 0 ? React.createElement("div", { style: { color: "#8b949e", fontSize: 13, padding: "20px 0", textAlign: "center" } }, "\u6682\u65e0\u81ea\u9009\u80a1\uff0c\u70b9\u51fb\u4e0b\u65b9\u6dfb\u52a0") : React.createElement("div", { className: "watchlist-grid" },
+    watchlistStocks.length === 0 ? React.createElement("div", { className: "wl-empty" },
+      React.createElement("div", { className: "wl-empty-icon" }, "\u2605"),
+      React.createElement("div", { className: "wl-empty-text" }, "\u6682\u65e0\u81ea\u9009\u80a1"),
+      React.createElement("div", { className: "wl-empty-hint" }, "\u70b9\u51fb\u4e0b\u65b9\u300c+ \u6dfb\u52a0\u80a1\u7968\u300d\u5f00\u59cb\u6784\u5efa\u4f60\u7684\u6295\u8d44\u7ec4\u5408")
+    ) : React.createElement("div", { className: "watchlist-grid" },
       watchlistStocks.map(function(stock) {
-        var mktLabel = stock.market === "CN" ? "\u4ea4\u80a1" : stock.market === "HK" ? "\u6e2f\u80a1" : "\u7f8e\u80a1";
+        var mktLabel = stock.market === "CN" ? "A\u80a1" : stock.market === "HK" ? "\u6e2f\u80a1" : "\u7f8e\u80a1";
         var prefix = stock.market === "CN" ? "\u00a5" : stock.market === "HK" ? "HK$" : "$";
         var isUndervalued = stock.dcf_value > stock.close;
         var discount = stock.dcf_value > 0 ? Math.round((1 - stock.close / stock.dcf_value) * 100) : 0;
+        var grade = stock.score_overall >= 80 ? "A" : stock.score_overall >= 65 ? "B" : "C";
+        var gradeColor = stock.score_overall >= 80 ? "#3fb950" : stock.score_overall >= 65 ? "#d29922" : "#8b949e";
         return React.createElement("div", { key: stock.ticker, className: "watchlist-card" + (selected === stock.ticker ? " selected" : ""), onClick: function() { onSelect(stock.ticker); } },
+          React.createElement("div", { className: "wl-badge", style: { background: gradeColor + "22", color: gradeColor, border: "1px solid " + gradeColor + "44" } }, grade),
           React.createElement("div", { className: "wl-card-header" },
             React.createElement("div", null,
               React.createElement("div", { className: "wl-name" }, stock.name),
@@ -551,10 +574,13 @@ function WatchlistPanel(props) {
             ),
             React.createElement("div", { className: "wl-star active", onClick: function(e) { e.stopPropagation(); onToggle(stock.ticker); } }, "\u2605")
           ),
-          React.createElement("div", { className: "wl-price" }, prefix + " " + stock.close),
+          React.createElement("div", { className: "wl-price" }, stock.close > 0 ? prefix + " " + stock.close : "\u2014"),
           React.createElement("div", { className: "wl-footer" },
-            React.createElement("div", { className: "wl-score" }, stock.score_overall),
-            React.createElement("div", { className: "wl-discount", style: { color: isUndervalued ? "#3fb950" : "#f85149" } }, isUndervalued ? "\u4f4e\u4f30 " + discount + "%" : "\u6ea2\u4ef7 " + Math.abs(discount) + "%")
+            React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 4 } },
+              React.createElement("span", { className: "score-badge " + scoreColor(stock.score_overall) }, stock.score_overall),
+              React.createElement("span", { className: "wl-roic" }, (stock.roic * 100).toFixed(1) + "% ROIC")
+            ),
+            React.createElement("div", { className: "wl-discount", style: { color: isUndervalued ? "#3fb950" : "#f85149" } }, isUndervalued ? "\u4f4e\u4f30 " + discount + "%" : discount > 0 ? "\u6ea2\u4ef7 " + Math.abs(discount) + "%" : "")
           )
         );
       })
@@ -563,45 +589,266 @@ function WatchlistPanel(props) {
 }
 
 
-function PortfolioPanel() {
-  return React.createElement("div", { className: "portfolio-panel" },
-    React.createElement("div", { className: "section" },
-      React.createElement("h3", null, "持仓追踪"),
-      React.createElement("div", { style: { color: "#8b949e", fontSize: 13, marginBottom: 16 } }, "暂无持仓数据"),
-      React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 } },
-        React.createElement("div", { className: "score-card" },
-          React.createElement("h4", null, "持仓数量"),
-          React.createElement("div", { className: "score-big", style: { color: "#8b949e" } }, "0"),
-          React.createElement("div", { className: "score-label" }, "股票")
+function PortfolioPanel(props) {
+  var _useStateP = useState([]);
+  var portfolioItems = _useStateP[0];
+  var setPortfolioItems = _useStateP[1];
+  var _useStatePS = useState(null);
+  var summary = _useStatePS[0];
+  var setSummary = _useStatePS[1];
+  var _useStatePM = useState(false);
+  var showModal = _useStatePM[0];
+  var setShowModal = _useStatePM[1];
+  var _useStatePMI = useState(null);
+  var modalItem = _useStatePMI[0];
+  var setModalItem = _useStatePMI[1];
+  var _useStatePSH = useState("");
+  var sharesInput = _useStatePSH[0];
+  var setSharesInput = _useStatePSH[1];
+  var _useStatePCP = useState("");
+  var costInput = _useStatePCP[0];
+  var setCostInput = _useStatePCP[1];
+  var _useStatePS2 = useState([]);
+  var searchResults = _useStatePS2[0];
+  var setSearchResults = _useStatePS2[1];
+  var _useStateQS2 = useState("");
+  var qs = _useStateQS2[0];
+  var qset = _useStateQS2[1];
+  var _useStateMkt2 = useState("CN");
+  var mkt = _useStateMkt2[0];
+  var setMkt = _useStateMkt2[1];
+
+  React.useEffect(function() {
+    fetch("/api/portfolio")
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        setPortfolioItems(data.items || []);
+        setSummary(data.summary);
+      });
+  }, []);
+
+  React.useEffect(function() {
+    if (qs.trim().length < 1) { setSearchResults([]); return; }
+    var timer = setTimeout(function() {
+      fetch("/api/search?q=" + encodeURIComponent(qs) + "&market=" + mkt)
+        .then(function(r) { return r.json(); })
+        .then(function(d) { setSearchResults((d.results || []).slice(0, 8)); });
+    }, 300);
+    return function() { clearTimeout(timer); };
+  }, [qs, mkt]);
+
+  function openAddModal(item) {
+    setModalItem(item);
+    setSharesInput(item && item.shares ? String(item.shares) : "");
+    setCostInput(item && item.cost_price ? String(item.cost_price) : "");
+    setShowModal(true);
+  }
+
+  function closeModal() {
+    setShowModal(false);
+    setModalItem(null);
+    setSharesInput("");
+    setCostInput("");
+  }
+
+  function changeStock() {
+    setModalItem(null);
+    qset("");
+  }
+
+  function saveHolding() {
+    var sym = modalItem ? modalItem.symbol : "";
+    var sh = parseFloat(sharesInput);
+    var cp = parseFloat(costInput);
+    if (!sym || isNaN(sh) || sh <= 0 || isNaN(cp) || cp <= 0) return;
+    fetch("/api/portfolio?symbol=" + encodeURIComponent(sym) + "&shares=" + sh + "&cost_price=" + cp, { method: "POST" })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        closeModal();
+        return fetch("/api/portfolio");
+      })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        setPortfolioItems(data.items || []);
+        setSummary(data.summary);
+      })
+      .catch(function(e) { console.error("saveHolding error", e); });
+  }
+
+  function deleteHolding(sym) {
+    fetch("/api/portfolio/" + encodeURIComponent(sym), { method: "DELETE" })
+      .then(function(r) { return r.json(); })
+      .then(function() {
+        return fetch("/api/portfolio");
+      })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        setPortfolioItems(data.items || []);
+        setSummary(data.summary);
+      });
+  }
+
+  var pxPrefix = function(market) {
+    return market === "CN" ? "¥" : market === "HK" ? "HK$" : "$";
+  };
+
+  function fmt(n) {
+    return (n == null || isNaN(n)) ? "—" : (n >= 0 ? "+" : "") + n.toFixed(2);
+  }
+  function fmtPct(n) {
+    return (n == null || isNaN(n)) ? "—" : (n >= 0 ? "+" : "") + n.toFixed(2) + "%";
+  }
+
+  var summaryEl = null;
+  if (summary) {
+    summaryEl = React.createElement("div", { className: "portfolio-summary" },
+      React.createElement("div", { className: "portfolio-stat" },
+        React.createElement("div", { className: "portfolio-stat-label" }, "持仓总市值"),
+        React.createElement("div", { className: "portfolio-stat-value" }, "¥ " + summary.total_value.toLocaleString("zh-CN", { minimumFractionDigits: 2 })),
+        React.createElement("div", { className: "portfolio-stat-sub" }, "成本 ¥" + " " + summary.total_cost.toLocaleString("zh-CN", { minimumFractionDigits: 2 }))
+      ),
+      React.createElement("div", { className: "portfolio-stat" },
+        React.createElement("div", { className: "portfolio-stat-label" }, "总盈亏"),
+        React.createElement("div", { className: "portfolio-stat-value", style: { color: summary.total_gain >= 0 ? "var(--accent-green)" : "var(--accent-red)" } }, fmt(summary.total_gain)),
+        React.createElement("div", { className: "portfolio-stat-sub" }, fmtPct(summary.total_gain_pct) + " 收益率")
+      ),
+      React.createElement("div", { className: "portfolio-stat" },
+        React.createElement("div", { className: "portfolio-stat-label" }, "股票数"),
+        React.createElement("div", { className: "portfolio-stat-value" }, portfolioItems.length),
+        React.createElement("div", { className: "portfolio-stat-sub" }, "只")
+      ),
+      React.createElement("div", { className: "portfolio-stat" },
+        React.createElement("div", { className: "portfolio-stat-label" }, "盈利股票"),
+        React.createElement("div", { className: "portfolio-stat-value", style: { color: "var(--accent-green)" } }, portfolioItems.filter(function(i) { return i.gain > 0; }).length),
+        React.createElement("div", { className: "portfolio-stat-sub" }, "只盈利")
+      )
+    );
+  }
+
+  var tableEl = portfolioItems.length === 0 ? React.createElement("div", { className: "portfolio-empty" },
+    React.createElement("div", { className: "portfolio-empty-icon" }, "◉"),
+    React.createElement("div", { className: "portfolio-empty-title" }, "暂无持仓"),
+    React.createElement("div", { className: "portfolio-empty-hint" }, "点击「+ 添加持仓」开始管理您的投资组合")
+  ) : React.createElement("div", { style: { overflowX: "auto" } },
+    React.createElement("table", { className: "portfolio-table" },
+      React.createElement("thead", null,
+        React.createElement("tr", null,
+          React.createElement("th", null, "股票"),
+          React.createElement("th", { className: "num" }, "持仓股数"),
+          React.createElement("th", { className: "num" }, "成本价"),
+          React.createElement("th", { className: "num" }, "成本总额"),
+          React.createElement("th", { className: "num" }, "现价"),
+          React.createElement("th", { className: "num" }, "当前价值"),
+          React.createElement("th", { className: "num" }, "盈亏"),
+          React.createElement("th", { className: "num" }, "收益率"),
+          React.createElement("th", null, "")
+        )
+      ),
+      React.createElement("tbody", null,
+        portfolioItems.map(function(item) {
+          var mktLabel = item.symbol.endsWith(".SH") || item.symbol.endsWith(".SZ") ? "A股" : item.symbol.endsWith(".HK") ? "港股" : "美股";
+          var px = item.symbol.endsWith(".SH") || item.symbol.endsWith(".SZ") ? "¥" : item.symbol.endsWith(".HK") ? "HK$" : "$";
+          var gainClass = item.gain >= 0 ? "portfolio-gain" : "portfolio-loss";
+          return React.createElement("tr", { key: item.symbol },
+            React.createElement("td", null,
+              React.createElement("div", { className: "portfolio-name" }, item.name),
+              React.createElement("div", { className: "portfolio-ticker" }, item.symbol, " · ", mktLabel)
+            ),
+            React.createElement("td", { className: "num" }, item.shares),
+            React.createElement("td", { className: "num" }, px + " " + item.cost_price.toFixed(2)),
+            React.createElement("td", { className: "num" }, px + " " + item.cost_total.toLocaleString("zh-CN", { minimumFractionDigits: 2 })),
+            React.createElement("td", { className: "num" }, px + " " + (item.current_price > 0 ? item.current_price.toFixed(2) : "—")),
+            React.createElement("td", { className: "num" }, px + " " + (item.current_value > 0 ? item.current_value.toLocaleString("zh-CN", { minimumFractionDigits: 2 }) : "—")),
+            React.createElement("td", { className: "num " + gainClass }, item.current_value > 0 ? fmt(item.gain) : "—"),
+            React.createElement("td", { className: "num " + gainClass }, item.current_value > 0 ? fmtPct(item.gain_pct) : "—"),
+            React.createElement("td", null,
+              React.createElement("span", { className: "portfolio-del", onClick: function() { deleteHolding(item.symbol); } }, "删除")
+            )
+          );
+        })
+      )
+    )
+  );
+
+  var modalEl = showModal ? React.createElement("div", { className: "modal-overlay", onClick: closeModal },
+    React.createElement("div", { className: "modal-box", onClick: function(e) { e.stopPropagation(); }, style: { width: 440 } },
+      React.createElement("div", { className: "modal-header" },
+        React.createElement("span", null, modalItem ? ("更新 " + modalItem.name) : "添加持仓"),
+        React.createElement("span", { className: "modal-close", onClick: closeModal }, "×")
+      ),
+      !modalItem ? React.createElement("div", { className: "modal-search" },
+        React.createElement("input", {
+          type: "text", className: "modal-input",
+          placeholder: "搜索股票名称或代码...",
+          value: qs, autoFocus: true,
+          onChange: function(e) { qset(e.target.value); }
+        })
+      ) : null,
+      !modalItem ? React.createElement("div", { className: "modal-market-tabs" },
+        React.createElement("button", { className: "market-tab" + (mkt === "CN" ? " active" : ""), onClick: function() { setMkt("CN"); qset(""); } }, "A股"),
+        React.createElement("button", { className: "market-tab" + (mkt === "US" ? " active" : ""), onClick: function() { setMkt("US"); qset(""); } }, "美股")
+      ) : null,
+      !modalItem && searchResults.length > 0 ? React.createElement("div", { className: "modal-results" },
+        searchResults.map(function(s) {
+          var mktLabel = s.market === "CN" ? "A股" : s.market === "HK" ? "港股" : "美股";
+          return React.createElement("div", { key: s.symbol, className: "modal-result-item", onClick: function() {
+            openAddModal({ symbol: s.symbol, name: s.name, shares: 0, cost_price: 0 });
+            qset(""); setSearchResults([]);
+          }},
+            React.createElement("span", { className: "modal-result-name" }, s.name),
+            React.createElement("span", { className: "modal-result-ticker" }, s.symbol, " · ", mktLabel)
+          );
+        })
+      ) : !modalItem && qs.length > 0 ? React.createElement("div", { className: "modal-no-result" }, "未找到匹配股票") : null,
+      React.createElement("div", { className: "portfolio-input-wrap" },
+        React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center" } },
+          React.createElement("div", { className: "portfolio-input-label" }, "股票"),
+          modalItem ? React.createElement("span", { onClick: changeStock, style: { fontSize: 12, color: "#58a6ff", cursor: "pointer", fontWeight: 500 } }, "更换") : null
         ),
-        React.createElement("div", { className: "score-card" },
-          React.createElement("h4", null, "持仓市值"),
-          React.createElement("div", { className: "score-big", style: { color: "#8b949e" } }, "¥0"),
-          React.createElement("div", { className: "score-label" }, "人民币")
-        ),
-        React.createElement("div", { className: "score-card" },
-          React.createElement("h4", null, "持仓收益"),
-          React.createElement("div", { className: "score-big", style: { color: "#8b949e" } }, "--"),
-          React.createElement("div", { className: "score-label" }, "累计")
+        React.createElement("div", { style: { fontSize: 14, fontWeight: 600 } }, modalItem ? (modalItem.name + " (" + modalItem.symbol + ")") : "请先搜索选择股票"),
+        React.createElement("div", { className: "portfolio-input-label", style: { marginTop: 12 } }, "持仓股数"),
+        React.createElement("input", { type: "number", className: "portfolio-input", placeholder: "e.g. 100", value: sharesInput, onChange: function(e) { setSharesInput(e.target.value); }, step: "any" }),
+        React.createElement("div", { className: "portfolio-input-label", style: { marginTop: 8 } }, "成本价 (买入时的价格)"),
+        React.createElement("input", { type: "number", className: "portfolio-input", placeholder: "e.g. 1500.00", value: costInput, onChange: function(e) { setCostInput(e.target.value); }, step: "any" }),
+        React.createElement("div", { style: { display: "flex", gap: 8, marginTop: 12 } },
+          React.createElement("div", { className: "portfolio-cancel-btn", onClick: closeModal }, "取消"),
+          React.createElement("div", {
+            className: "portfolio-ok-btn",
+            style: { opacity: !sharesInput || !costInput ? 0.5 : 1, cursor: !sharesInput || !costInput ? "not-allowed" : "pointer" },
+            onClick: function() { saveHolding(); }
+          }, "确定")
         )
       )
-    ),
-    React.createElement("div", { className: "section" },
-      React.createElement("h3", null, "组合健康度"),
-      React.createElement("div", { style: { fontSize: 13, color: "#8b949e" } }, "Phase 2 功能：持仓分析、风险敞口、收益归因")
     )
+  ) : null;
+
+  return React.createElement("div", { className: "portfolio-panel" },
+    modalEl,
+    React.createElement("div", { className: "portfolio-toolbar" },
+      React.createElement("div", { className: "portfolio-title" }, "持仓详情"),
+      React.createElement("button", { className: "portfolio-add-btn", onClick: function() { openAddModal(null); } },
+        React.createElement("span", null, "+ 添加持仓")
+      )
+    ),
+    summaryEl,
+    tableEl
   );
 }
 
-function SignalsPanel() {
-  var signals = [
-    { ticker: "600519.SH", name: "贵州茅台", signal: "买入", reason: "DCF折价 6.3%，ROIC 34.2%，护城河深厚", color: "#3fb950" },
-    { ticker: "AAPL", name: "苹果", signal: "持有", reason: "合理估值，生态护城河稳固", color: "#58a6ff" },
-    { ticker: "MSFT", name: "微软", signal: "买入", reason: "DCF折价 4.3%，云计算护城河极深", color: "#3fb950" },
-    { ticker: "JPM", name: "摩根大通", signal: "买入", reason: "DCF折价 6.7%，估值偏低", color: "#3fb950" },
-    { ticker: "600036.SH", name: "招商银行", signal: "持有", reason: "估值合理，零售银行护城河稳固", color: "#58a6ff" }
-  ];
+function SignalsPanel(props) {
+  var stocks = props.stocks || [];
+  var signals = stocks.filter(function(s) { return s.dcf_value > 0 && s.score_overall > 0; }).slice(0, 10).map(function(s) {
+    var discount = s.dcf_value > 0 ? Math.round((1 - s.close / s.dcf_value) * 100) : 0;
+    var signal, color;
+    if (discount > 10) { signal = "买入"; color = "#22c55e"; }
+    else if (discount > 0) { signal = "关注"; color = "#3b82f6"; }
+    else if (discount > -10) { signal = "持有"; color = "#eab308"; }
+    else { signal = "回避"; color = "#ef4444"; }
+    var reason = "DCF" + (discount > 0 ? "折价 " + discount + "%" : "溢价 " + Math.abs(discount) + "%") + " · ROIC " + (s.roic * 100).toFixed(1) + "%";
+    return { ticker: s.ticker, name: s.name, signal: signal, reason: reason, color: color };
+  });
   return React.createElement("div", { className: "signals-panel" },
+    signals.length === 0 ? React.createElement("div", { className: "section", style: { textAlign: "center", color: "var(--text-muted)", fontSize: 13, padding: 40 } }, "暂无信号数据，请先刷新股票列表") :
     React.createElement("div", { className: "section" },
       React.createElement("h3", null, "决策信号"),
       signals.map(function(sig) {
@@ -621,22 +868,23 @@ function SignalsPanel() {
               border: "1px solid " + sig.color + "44"
             }
           }, sig.signal),
-          React.createElement("span", { style: { fontSize: 12, color: "#8b949e", flex: 1 } }, sig.reason)
+          React.createElement("span", { style: { fontSize: 12, color: "var(--text-secondary)", flex: 1 } }, sig.reason)
         );
       })
     ),
-    React.createElement("div", { style: { fontSize: 12, color: "#8b949e", marginTop: 16 } }, "Phase 3 功能：实时信号推送、风险提示、买卖提醒")
+    React.createElement("div", { style: { fontSize: 12, color: "var(--text-muted)", marginTop: 16 } }, "基于 DCF 估值和 ROIC 自动生成")
   );
 }
 
-function DataPanel() {
-  var cnCount = STOCKS.filter(function(s) { return s.market === "CN"; }).length;
-  var hkCount = STOCKS.filter(function(s) { return s.market === "HK"; }).length;
-  var usCount = STOCKS.filter(function(s) { return s.market === "US"; }).length;
+function DataPanel(props) {
+  var stocks = props.stocks || [];
+  var cnCount = stocks.filter(function(s) { return s.market === "CN"; }).length;
+  var hkCount = stocks.filter(function(s) { return s.market === "HK"; }).length;
+  var usCount = stocks.filter(function(s) { return s.market === "US"; }).length;
   return React.createElement("div", { className: "data-panel" },
     React.createElement("div", { className: "section" },
       React.createElement("h3", null, "数据管理"),
-      React.createElement("div", { className: "metric-row" }, React.createElement("span", { className: "metric-label" }, "股票数量"), React.createElement("span", null, STOCKS.length + " 只")),
+      React.createElement("div", { className: "metric-row" }, React.createElement("span", { className: "metric-label" }, "股票数量"), React.createElement("span", null, stocks.length + " 只")),
       React.createElement("div", { className: "metric-row" }, React.createElement("span", { className: "metric-label" }, "A股"), React.createElement("span", null, cnCount + " 只")),
       React.createElement("div", { className: "metric-row" }, React.createElement("span", { className: "metric-label" }, "港股"), React.createElement("span", null, hkCount + " 只")),
       React.createElement("div", { className: "metric-row" }, React.createElement("span", { className: "metric-label" }, "美股"), React.createElement("span", null, usCount + " 只")),
@@ -647,10 +895,9 @@ function DataPanel() {
     React.createElement("div", { className: "section" },
       React.createElement("h3", null, "数据库状态"),
       React.createElement("div", { className: "metric-row" }, React.createElement("span", { className: "metric-label" }, "数据库文件"), React.createElement("span", null, "D:/buffett-dashboard/data/buffett.db")),
-      React.createElement("div", { className: "metric-row" }, React.createElement("span", { className: "metric-label" }, "连接状态"), React.createElement("span", { style: { color: "#3fb950" } }, "正常")),
+      React.createElement("div", { className: "metric-row" }, React.createElement("span", { className: "metric-label" }, "连接状态"), React.createElement("span", { style: { color: "var(--accent-green)" } }, "正常")),
       React.createElement("div", { className: "metric-row" }, React.createElement("span", { className: "metric-label" }, "最后更新"), React.createElement("span", null, new Date().toLocaleString("zh-CN")))
-    ),
-    React.createElement("div", { style: { fontSize: 12, color: "#8b949e", marginTop: 16 } }, "Phase 2 功能：数据导出、自定义数据源、数据清洗")
+    )
   );
 }
 
@@ -667,53 +914,140 @@ function App() {
   var _useState4 = useState(false);
   var refreshing = _useState4[0];
   var setRefreshing = _useState4[1];
+  var _useState5a = useState("");
+  var refreshMsg = _useState5a[0];
+  var setRefreshMsg = _useState5a[1];
   var _useState5 = useState(new Date().toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" }));
   var refreshTime = _useState5[0];
   var setRefreshTime = _useState5[1];
-  var _useState6 = useState(["600519.SH", "AAPL", "00700.HK"]);
+  var _useState6 = useState([]);
   var watchlist = _useState6[0];
   var setWatchlist = _useState6[1];
-  var fetchedStocks = [
-    {ticker:"600519.SH",name:"贵州茅台",market:"CN",sector:"白酒",close:1856,pe_ratio:0,roic:0.342,score_overall:87.9,score_moat:85,dcf_value:2004,metrics:{gross_margin:0.918,net_margin:0.502,revenue_growth:0.175,pb:0},moat_tags:[],ai_report:""},
-    {ticker:"000858.SZ",name:"五粮液",market:"CN",sector:"白酒",close:168,pe_ratio:0,roic:0.28,score_overall:83.8,score_moat:78,dcf_value:181,metrics:{gross_margin:0.75,net_margin:0.35,revenue_growth:0.12,pb:0},moat_tags:[],ai_report:""},
-    {ticker:"MSFT",name:"微软",market:"US",sector:"科技",close:415,pe_ratio:0,roic:0.25,score_overall:83.8,score_moat:82,dcf_value:448,metrics:{gross_margin:0.69,net_margin:0.37,revenue_growth:0.12,pb:0},moat_tags:[],ai_report:""},
-    {ticker:"00700.HK",name:"腾讯控股",market:"HK",sector:"互联网",close:428,pe_ratio:0,roic:0.22,score_overall:82.3,score_moat:80,dcf_value:462,metrics:{gross_margin:0.52,net_margin:0.28,revenue_growth:0.10,pb:0},moat_tags:[],ai_report:""},
-    {ticker:"600276.SH",name:"恒瑞医药",market:"CN",sector:"医药",close:52,pe_ratio:0,roic:0.16,score_overall:78.3,score_moat:72,dcf_value:56,metrics:{gross_margin:0.83,net_margin:0.20,revenue_growth:0.10,pb:0},moat_tags:[],ai_report:""},
-    {ticker:"002594.SZ",name:"比亚迪",market:"CN",sector:"汽车",close:260,pe_ratio:0,roic:0.18,score_overall:75.8,score_moat:70,dcf_value:281,metrics:{gross_margin:0.20,net_margin:0.05,revenue_growth:0.20,pb:0},moat_tags:[],ai_report:""},
-    {ticker:"AAPL",name:"苹果",market:"US",sector:"科技",close:218,pe_ratio:0,roic:0.28,score_overall:74.8,score_moat:82,dcf_value:235,metrics:{gross_margin:0.462,net_margin:0.262,revenue_growth:0.08,pb:0},moat_tags:[],ai_report:""},
-    {ticker:"JPM",name:"摩根大通",market:"US",sector:"金融",close:198,pe_ratio:0,roic:0.18,score_overall:74.3,score_moat:76,dcf_value:214,metrics:{gross_margin:0.55,net_margin:0.35,revenue_growth:0.06,pb:0},moat_tags:[],ai_report:""},
-    {ticker:"600036.SH",name:"招商银行",market:"CN",sector:"银行",close:38,pe_ratio:0,roic:0.18,score_overall:72.1,score_moat:74,dcf_value:41,metrics:{gross_margin:0.40,net_margin:0.38,revenue_growth:0.07,pb:0},moat_tags:[],ai_report:""},
-    {ticker:"600900.SH",name:"长江电力",market:"CN",sector:"电力",close:28,pe_ratio:0,roic:0.15,score_overall:70.6,score_moat:70,dcf_value:30,metrics:{gross_margin:0.60,net_margin:0.45,revenue_growth:0.05,pb:0},moat_tags:[],ai_report:""},
-    {ticker:"NKE",name:"耐克",market:"US",sector:"服装",close:95,pe_ratio:0,roic:0.18,score_overall:68.3,score_moat:68,dcf_value:103,metrics:{gross_margin:0.44,net_margin:0.11,revenue_growth:0.06,pb:0},moat_tags:[],ai_report:""},
-    {ticker:"KO",name:"可口可乐",market:"US",sector:"消费",close:62,pe_ratio:0,roic:0.15,score_overall:63.1,score_moat:65,dcf_value:67,metrics:{gross_margin:0.40,net_margin:0.22,revenue_growth:0.03,pb:0},moat_tags:[],ai_report:""},
-    {ticker:"JNJ",name:"强生",market:"US",sector:"医药",close:155,pe_ratio:0,roic:0.12,score_overall:60.8,score_moat:62,dcf_value:167,metrics:{gross_margin:0.58,net_margin:0.22,revenue_growth:0.04,pb:0},moat_tags:[],ai_report:""},
-    {ticker:"601318.SH",name:"中国平安",market:"CN",sector:"金融保险",close:48.5,pe_ratio:0,roic:0.12,score_overall:51.8,score_moat:55,dcf_value:52,metrics:{gross_margin:0.28,net_margin:0.10,revenue_growth:0.04,pb:0},moat_tags:[],ai_report:""},
-    {ticker:"WMT",name:"沃尔玛",market:"US",sector:"零售",close:68,pe_ratio:0,roic:0.13,score_overall:48.3,score_moat:52,dcf_value:73,metrics:{gross_margin:0.25,net_margin:0.03,revenue_growth:0.04,pb:0},moat_tags:[],ai_report:""},
-    {ticker:"600028.SH",name:"中国石化",market:"CN",sector:"能源",close:6.8,pe_ratio:0,roic:0.10,score_overall:44.6,score_moat:48,dcf_value:7.3,metrics:{gross_margin:0.20,net_margin:0.04,revenue_growth:0.03,pb:0},moat_tags:[],ai_report:""},
-  ];
+  var _useState7 = useState([]);
+  var fetchedStocks = _useState7[0];
+  var setFetchedStocks = _useState7[1];
+  var _useState8 = useState("");
+  var addingStock = _useState8[0];
+  var setAddingStock = _useState8[1];
+
+  React.useEffect(function() {
+    console.log("useEffect running...");
+    Promise.all([
+      fetch("/api/stocks").then(function(r) { console.log("stocks status:", r.status); return r.json(); }),
+      fetch("/api/watchlist").then(function(r) { console.log("watchlist status:", r.status); return r.json(); })
+    ]).then(function(results) {
+      var stocksData = results[0];
+      var watchlistData = results[1];
+      console.log("stocksData:", stocksData, "watchlistData:", watchlistData);
+      if (Array.isArray(stocksData) && stocksData.length > 0) {
+        setFetchedStocks(stocksData.map(function(s) {
+          var discount = s.dcf_value > s.close ? ((s.dcf_value - s.close) / s.dcf_value * 100).toFixed(1) : 0;
+          return {
+            ticker: s.symbol, name: s.name, market: s.market, sector: s.sector || "",
+            close: s.close, pe_ratio: s.pe_ratio, roic: s.roic || 0,
+            score_overall: s.score_overall, score_moat: s.score_moat || 0,
+            dcf_value: s.dcf_value || 0, discount: discount,
+            metrics: s.metrics || { gross_margin: 0, net_margin: 0, revenue_growth: 0, pb: 0 },
+            moat_tags: s.moat_tags || [], ai_report: s.ai_report || "",
+            metric_notes: s.metric_notes || {}
+          };
+        }));
+      }
+      if (Array.isArray(watchlistData)) {
+        console.log("Setting watchlist to:", watchlistData.map(function(s) { return s.symbol; }));
+        setWatchlist(watchlistData.map(function(s) { return s.symbol; }));
+      }
+    }).catch(function(e) { console.error("Failed to load data", e); });
+  }, []);
+
   var toggleWatchlist = function(ticker) {
     if (watchlist.includes(ticker)) {
-      setWatchlist(watchlist.filter(function(t) { return t !== ticker; }));
+      fetch("/api/watchlist/" + encodeURIComponent(ticker), { method: "DELETE" })
+        .then(function() { setWatchlist(watchlist.filter(function(t) { return t !== ticker; })); });
     } else {
-      setWatchlist([ticker].concat(watchlist));
+      setAddingStock("添加中...");
+      fetch("/api/watchlist/" + encodeURIComponent(ticker), { method: "POST" })
+        .then(function(r) { return r.json(); })
+        .then(function(resp) {
+          var name = resp.name || ticker;
+          var placeholder = { ticker: ticker, name: name, market: "CN", sector: "",
+            close: 0, pe_ratio: 0, roic: 0, score_overall: 0, score_moat: 0,
+            dcf_value: 0, discount: "0",
+            metrics: { gross_margin: 0, net_margin: 0, revenue_growth: 0, pb: 0 },
+            moat_tags: [], ai_report: "", metric_notes: {} };
+          var already = fetchedStocks.some(function(s) { return s.ticker === ticker; });
+          if (!already) {
+            setFetchedStocks([placeholder].concat(fetchedStocks));
+          }
+          setWatchlist([ticker].concat(watchlist));
+          setAddingStock("获取财务数据...");
+          fetch("/api/watchlist/" + encodeURIComponent(ticker) + "/refresh", { method: "POST" })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+              if (data.status === "ok") {
+                setAddingStock("计算估值中...");
+                return fetch("/api/stock/" + encodeURIComponent(ticker));
+              } else {
+                setAddingStock("");
+                return null;
+              }
+            })
+            .then(function(r) { return r ? r.json() : null; })
+            .then(function(data) {
+              if (data && !data.error) {
+                var discount = data.dcf_value > data.close ? ((data.dcf_value - data.close) / data.dcf_value * 100).toFixed(1) : 0;
+                var fullStock = {
+                  ticker: data.symbol, name: data.name, market: data.market, sector: data.sector || "",
+                  close: data.close, pe_ratio: data.pe_ratio || 0, roic: data.roic || 0,
+                  score_overall: data.score_overall || 0, score_moat: data.score_moat || 0,
+                  dcf_value: data.dcf_value || 0, discount: discount,
+                  metrics: data.metrics || { gross_margin: 0, net_margin: 0, revenue_growth: 0, pb: 0 },
+                  moat_tags: data.moat_tags || [], ai_report: data.ai_report || "",
+                  metric_notes: data.metric_notes || {}
+                };
+                setFetchedStocks([fullStock].concat(fetchedStocks.filter(function(s) { return s.ticker !== ticker; })));
+              }
+              setAddingStock("");
+            })
+            .catch(function() { setAddingStock(""); });
+        });
     }
   };
 
   var handleRefresh = function() {
     setRefreshing(true);
-    setTimeout(function() {
-      setRefreshTime(new Date().toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" }));
-      setRefreshing(false);
-    }, 1500);
+    setRefreshMsg("准备刷新...");
+    fetch("/api/stocks")
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (Array.isArray(data)) {
+          setFetchedStocks(data.map(function(s) {
+            var discount = s.dcf_value > s.close ? ((s.dcf_value - s.close) / s.dcf_value * 100).toFixed(1) : 0;
+            return {
+              ticker: s.symbol, name: s.name, market: s.market, sector: s.sector || "",
+              close: s.close, pe_ratio: s.pe_ratio, roic: s.roic || 0,
+              score_overall: s.score_overall, score_moat: s.score_moat || 0,
+              dcf_value: s.dcf_value || 0, discount: discount,
+              metrics: s.metrics || { gross_margin: 0, net_margin: 0, revenue_growth: 0, pb: 0 },
+              moat_tags: s.moat_tags || [], ai_report: s.ai_report || "",
+              metric_notes: s.metric_notes || {}
+            };
+          }));
+        }
+        setRefreshTime(new Date().toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" }));
+        setRefreshing(false);
+        setRefreshMsg("");
+      })
+      .catch(function() { setRefreshing(false); setRefreshMsg(""); });
   };
 
-  var selectedStock = MOCK[selected];
+  var selectedStock = fetchedStocks.length > 0 ? fetchedStocks.find(function(s) { return s.ticker === selected; }) : null;
   var navItems = [
-    { key: "stocks", label: "股票" },
-    { key: "watchlist", label: "自选" },
-    { key: "portfolio", label: "持仓" },
-    { key: "signals", label: "信号" },
-    { key: "data", label: "数据" }
+    { key: "stocks", label: "股票池", icon: "▣" },
+    { key: "watchlist", label: "自选股", icon: "★" },
+    { key: "portfolio", label: "持仓", icon: "◈" },
+    { key: "signals", label: "信号", icon: "⚡" },
+    { key: "data", label: "数据", icon: "⊞" }
   ];
   var filterItems = [
     { value: "all", label: "全部" },
@@ -724,47 +1058,59 @@ function App() {
 
   return React.createElement("div", { className: "app" },
     React.createElement("div", { className: "sidebar" },
-      React.createElement("div", { className: "logo" }, "BuffettDash"),
+      React.createElement("div", { className: "logo" }, "BuffettDash", React.createElement("span", null, "beta")),
       React.createElement("div", { className: "nav" },
         navItems.map(function(item) {
           return React.createElement("div", {
             key: item.key,
             className: "nav-item " + (nav === item.key ? "active" : ""),
             onClick: function() { setNav(item.key); }
-          }, item.label);
+          },
+            React.createElement("span", { className: "nav-icon" }, item.icon),
+            item.label);
         })
+      ),
+      React.createElement("div", { className: "sidebar-footer" },
+        fetchedStocks.length > 0 ? fetchedStocks.length + " 只股票" : "加载中..."
       )
     ),
     React.createElement("div", { className: "main" },
       React.createElement("div", { className: "topbar" },
-        React.createElement("div", { className: "filters" },
-          filterItems.map(function(f) {
-            return React.createElement("span", {
-              key: f.value,
-              className: "tag " + (filter === f.value ? "active" : ""),
-              onClick: function() { setFilter(f.value); }
-            }, f.label);
-          })
+        React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 12 } },
+          React.createElement("span", { className: "topbar-title" },
+            navItems.filter(function(i) { return i.key === nav; })[0].icon + " " +
+            navItems.filter(function(i) { return i.key === nav; })[0].label
+          ),
+          nav === "stocks" && React.createElement("div", { className: "filters" },
+            filterItems.map(function(f) {
+              return React.createElement("span", {
+                key: f.value,
+                className: "tag " + (filter === f.value ? "active" : ""),
+                onClick: function() { setFilter(f.value); }
+              }, f.label);
+            })
+          )
         ),
-        React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8 } },
-          React.createElement("span", { style: { fontSize: 12, color: "#8b949e" } }, "更新于 " + refreshTime),
+        React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10 } },
+          React.createElement("span", { style: { fontSize: 11, color: "var(--text-muted)" } }, "更新于 " + refreshTime),
           React.createElement("button", {
             className: "refresh-btn " + (refreshing ? "refreshing" : ""),
             onClick: handleRefresh
-          }, refreshing ? "刷新中..." : "刷新")
+          }, refreshing ? "刷新中..." : "刷新"),
+        refreshMsg ? React.createElement("span", { style: { fontSize: 12, color: "var(--accent-blue)", marginLeft: 4 } }, refreshMsg) : null
         )
       ),
-      nav === "stocks" && React.createElement("div", null,
+      nav === "stocks" && React.createElement("div", { style: { flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" } },
         React.createElement(DashboardRow, { stocks: fetchedStocks, onSelect: setSelected }),
         React.createElement("div", { className: "content" },
           React.createElement(StockList, { stocks: fetchedStocks, selected: selected, onSelect: setSelected, filter: filter, watchlist: watchlist, onToggle: toggleWatchlist }),
           React.createElement(StockDetail, { stock: selectedStock })
         )
       ),
-      nav === "watchlist" && React.createElement(WatchlistPanel, { watchlist: watchlist, stocks: fetchedStocks, selected: selected, onSelect: setSelected, onToggle: toggleWatchlist }),
-      nav === "portfolio" && React.createElement(PortfolioPanel, null),
-      nav === "signals" && React.createElement(SignalsPanel, null),
-      nav === "data" && React.createElement(DataPanel, null)
+      nav === "watchlist" && React.createElement(WatchlistPanel, { watchlist: watchlist, stocks: fetchedStocks, selected: selected, onSelect: setSelected, onToggle: toggleWatchlist, addingStock: addingStock }),
+      nav === "portfolio" && React.createElement(PortfolioPanel, { selectedStock: selectedStock }),
+      nav === "signals" && React.createElement(SignalsPanel, { stocks: fetchedStocks }),
+      nav === "data" && React.createElement(DataPanel, { stocks: fetchedStocks })
     )
   );
 }

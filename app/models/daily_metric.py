@@ -12,6 +12,7 @@ class DailyMetric(Base):
     roic = Column(Float)
     revenue_growth = Column(Float)
     net_margin = Column(Float)
+    gross_margin = Column(Float)
     fcf = Column(Float)
     dcf_value = Column(Float)
     score_overall = Column(Float)
